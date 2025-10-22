@@ -1,10 +1,16 @@
-# lex.gaodun.com
+# React + Vite
 
-> 打造一款极致高效、智能、个性化的英语单词学习工具，通过AI技术，让用户不仅能“查”单词，更能“懂”和“用”单词，彻底告别“只知释义，不会使用”的学习困境。
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-> "LexWord" 整合了大型语言模型的强大能力，提供：
-> 一站式查询：快速获取权威释义和真人发音
-> AI情景例句：生成贴近用户生活、兴趣或专业领域的高质量例句
-> 个性化学习：基于用户画像，提供定制化学习内容
-> 输出强化：通过AI对话和练习，确保学以致用
-> 趣味记忆：通过AI谐音故事视频，让发音记忆变得简单有趣
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
