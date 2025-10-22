@@ -1,3 +1,1 @@
-module.exports = {
-  "extends": "@gaodun.com/commitlint"
-}
+module.exports = require('./config/gaodun/commitlint');

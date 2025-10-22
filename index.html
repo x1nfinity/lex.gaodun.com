@@ -1,42 +1,26 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
 
-<head>
-    <meta charset="UTF-8" />
-    <!-- <link rel="icon"
-        href="https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202207/14/9c277_20220714143845.png" /> -->
-    <link rel="icon"
-        href="https://epiphany.gaodun.com/ep3/favicon.ico" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+        <script>
+            var _hmt = _hmt || [];
+            (function () {
+                var hm = document.createElement('script');
+                hm.src = 'https://hm.baidu.com/hm.js?c49b1849eb91e1c187d0bfffe869c83f';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
 
-    <script>
-        let scriptSrc = ""
-        const timestamp = new Date().getTime()
+        <title>LexWord</title>
+        <script crossorigin defer src="https://s.gaodunwangxiao.com/static-resource/react/18.3.1/react.production.min.js"></script>
+        <script crossorigin defer src="https://s.gaodunwangxiao.com/static-resource/react-dom/18.3.1/react-dom.production.min.js"></script>
+    </head>
 
-        if (window.location.href.includes('https://t-')) {
-            scriptSrc = "https://t-s.gaodunwangxiao.com/static-resource/prevent-recording.js"
-        } else if (window.location.href.includes('https://pre-')) {
-            scriptSrc = "https://pre-s.gaodunwangxiao.com/static-resource/prevent-recording.js"
-        } else {
-            scriptSrc = "https://s.gaodunwangxiao.com/static-resource/prevent-recording.js"
-        }
-        scriptSrc = `${scriptSrc}?v=${timestamp}`
-        const scriptElement = document.createElement('script')
-        scriptElement.src = scriptSrc
-        document.head.appendChild(scriptElement);
-    </script>
-
-    <title>智能学习平台</title>
-    <script crossorigin defer
-        src="https://s.gaodunwangxiao.com/static-resource/react/18.3.1/react.production.min.js"></script>
-    <script crossorigin defer
-        src="https://s.gaodunwangxiao.com/static-resource/react-dom/18.3.1/react-dom.production.min.js"></script>
-</head>
-
-<body>
-    <div id="root"></div>
-</body>
-
+    <body>
+        <div id="root"></div>
+    </body>
 </html>
