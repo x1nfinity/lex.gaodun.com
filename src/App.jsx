@@ -1,69 +1,48 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
-const dailyWords = [
+const DEFAULT_HOT_WORDS = [
   {
-    word: 'charger',
-    translation: 'n. 充电器；充电线',
-    pronunciation: '/ˈtʃɑːrdʒər/',
-    likes: '12K',
-    practices: '9.3K',
+    word: 'abandon',
+    definition: 'to leave something or someone behind intentionally',
+    phonetic: '/əˈbændən/',
   },
   {
-    word: 'prototype',
-    translation: 'n. 原型；样机',
-    pronunciation: '/ˈproʊtəˌtaɪp/',
-    likes: '8.4K',
-    practices: '6.1K',
+    word: 'serendipity',
+    definition: 'the occurrence of events by chance in a happy way',
+    phonetic: '/ˌsɛrənˈdɪpɪti/',
   },
   {
-    word: 'landscape',
-    translation: 'n. 风景；地貌',
-    pronunciation: '/ˈlændˌskeɪp/',
-    likes: '9.8K',
-    practices: '7.6K',
+    word: 'tenacious',
+    definition: 'tending to keep a firm hold or adhere closely',
+    phonetic: '/təˈneɪʃəs/',
   },
   {
-    word: 'sprint',
-    translation: 'v. 冲刺；加速完成',
-    pronunciation: '/sprɪnt/',
-    likes: '6.7K',
-    practices: '5.2K',
+    word: 'resilient',
+    definition: 'able to withstand or recover quickly from difficulties',
+    phonetic: '/rɪˈzɪljənt/',
   },
   {
-    word: 'spectrum',
-    translation: 'n. 光谱；范围',
-    pronunciation: '/ˈspɛktrəm/',
-    likes: '7.4K',
-    practices: '5.9K',
+    word: 'eloquent',
+    definition: 'fluent or persuasive in speaking or writing',
+    phonetic: '/ˈɛləkwənt/',
   },
   {
-    word: 'momentum',
-    translation: 'n. 动量；发展势头',
-    pronunciation: '/moʊˈmɛntəm/',
-    likes: '11K',
-    practices: '8.1K',
+    word: 'catalyst',
+    definition: 'something that precipitates an event or change',
+    phonetic: '/ˈkætəlɪst/',
   },
 ]
 
-const HeartIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M12 20.5C12 20.5 4 14.5 4 9.5C4 7.01472 6.01472 5 8.5 5C10.0523 5 11.438 5.83267 12 7.05882C12.562 5.83267 13.9477 5 15.5 5C17.9853 5 20 7.01472 20 9.5C20 14.5 12 20.5 12 20.5Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
+const STORAGE_KEYS = {
+  hotWords: 'lex.hotwords.v1',
+  cache: 'lex.dictionary.cache.v1',
+  progress: 'lex.progress.v1',
+}
+
+const PROGRESS_INTERVALS_HOURS = [1, 2, 4, 8, 24]
+
+const isBrowser = typeof window !== 'undefined'
 
 const SoundIcon = () => (
   <svg
@@ -117,32 +96,6 @@ const SearchIcon = () => (
   </svg>
 )
 
-const ArrowLeftIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M5 12H19"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M10 7L5 12L10 17"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
-
 const SparkleIcon = () => (
   <svg
     width="18"
@@ -176,261 +129,458 @@ const SparkleIcon = () => (
   </svg>
 )
 
-const LandingView = ({ onNavigate }) => (
-  <>
-    <section className="hero">
-      <div className="hero-text">
-        <h1 className="hero-title">Welcome ,Jackson</h1>
-        <p className="hero-subtitle">智慧查询，理解更高一筹</p>
-      </div>
-      <label className="hero-search" htmlFor="word-search">
-        <SearchIcon />
-        <input
-          id="word-search"
-          type="text"
-          placeholder="在此输入单词，立即理解并学会运用"
-        />
-        <button className="search-action" type="button" onClick={onNavigate}>
-          开始探索
-        </button>
-      </label>
-    </section>
-
-    <section className="daily-words">
-      <div className="daily-header">
-        <h2>今日热词</h2>
-        <button className="view-all" type="button">
-          查看全部
-        </button>
-      </div>
-      <div className="word-grid">
-        {dailyWords.map((item) => (
-          <article
-            className="word-card"
-            key={item.word}
-            role="button"
-            tabIndex={0}
-            onClick={onNavigate}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                onNavigate()
-              }
-            }}
-          >
-            <div className="word-card-header">
-              <h3>{item.word}</h3>
-              <button className="icon-button" type="button" aria-label="收藏">
-                <HeartIcon />
-              </button>
-            </div>
-            <p className="word-translation">{item.translation}</p>
-            <div className="word-meta">
-              <div className="word-meta-item">
-                <SoundIcon />
-                <span>{item.pronunciation}</span>
-              </div>
-              <div className="word-meta-item">
-                <HeartIcon />
-                <span>{item.likes}</span>
-              </div>
-              <div className="word-meta-item">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12 5V12L16.5 14.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-                <span>{item.practices}</span>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  </>
+const ClockIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 5V12L16.5 14.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
 )
 
-const WordDetailView = ({ detail, onBack }) => {
-  const recommendedPhrases = useMemo(
-    () => detail.phrases.slice(0, 3),
-    [detail.phrases],
-  )
+const formatDueTime = (timestamp) => {
+  if (!timestamp) return '尚未安排'
+  const now = Date.now()
+  const diff = timestamp - now
+  if (diff <= 0) {
+    return '随时可以复习'
+  }
+  const minutes = Math.round(diff / 60000)
+  if (minutes < 60) {
+    return `${Math.max(minutes, 1)} 分钟后`
+  }
+  const hours = Math.round(diff / 3600000)
+  if (hours < 24) {
+    return `${hours} 小时后`
+  }
+  const days = Math.round(diff / 86400000)
+  return `${days} 天后`
+}
+
+const formatHistoryTime = (timestamp) => {
+  const date = new Date(timestamp)
+  return `${date.getMonth() + 1}/${date.getDate()} ${date
+    .toTimeString()
+    .slice(0, 5)}`
+}
+
+const safeReadFromStorage = (key, fallback) => {
+  if (!isBrowser) return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+    const parsed = JSON.parse(raw)
+    return parsed ?? fallback
+  } catch (error) {
+    console.warn(`Failed to read ${key} from storage`, error)
+    return fallback
+  }
+}
+
+const transformDictionaryResponse = (data) => {
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('未找到该单词的释义，请检查拼写')
+  }
+
+  const phoneticSet = new Map()
+  const highlightDefinitions = []
+  const examples = []
+  const synonymsSet = new Set()
+
+  data.forEach((entry) => {
+    entry.phonetics?.forEach((item) => {
+      if (!item.text && !item.audio) return
+      const key = `${item.text ?? ''}|${item.audio ?? ''}`
+      if (!phoneticSet.has(key)) {
+        phoneticSet.set(key, {
+          text: item.text ?? '',
+          audio: item.audio ?? '',
+        })
+      }
+    })
+
+    entry.meanings?.forEach((meaning) => {
+      const partOfSpeech = meaning.partOfSpeech
+      meaning.definitions?.forEach((definition) => {
+        if (definition.definition) {
+          highlightDefinitions.push({
+            partOfSpeech,
+            definition: definition.definition,
+          })
+        }
+        if (definition.example) {
+          examples.push({
+            en: definition.example,
+          })
+        }
+        definition.synonyms?.forEach((synonym) => {
+          synonymsSet.add(synonym)
+        })
+      })
+    })
+  })
+
+  const phonetics = Array.from(phoneticSet.values())
+  const primaryDefinition = highlightDefinitions[0]?.definition ?? ''
+
+  return {
+    word: data[0]?.word ?? '',
+    phonetics,
+    primaryDefinition,
+    highlights: highlightDefinitions.slice(0, 8),
+    examples: examples.slice(0, 6),
+    synonyms: Array.from(synonymsSet).slice(0, 16),
+    sourceUrls: data[0]?.sourceUrls ?? [],
+  }
+}
+
+const WordDetailView = ({ detail, progressInfo, onProgressUpdate, onPlayAudio }) => {
+  const recommendedPhonetics = detail.phonetics.length
+    ? detail.phonetics
+    : [{ text: '暂无音标', audio: '' }]
 
   return (
     <section className="word-detail">
-      <div className="word-detail-bar">
-        <button className="back-button" type="button" onClick={onBack}>
-          <ArrowLeftIcon />
-          返回探索
-        </button>
-        <button className="sync-button" type="button">
-          <SparkleIcon />
-          同步收藏
-        </button>
-      </div>
-
       <div className="word-detail-card">
         <header className="word-detail-header">
-          <div>
+          <div className="word-header-text">
+            <span className="word-label">查询结果</span>
             <h1>{detail.word}</h1>
-            <p className="word-detail-translation">{detail.translation}</p>
+            <p className="word-detail-translation">
+              {detail.primaryDefinition || '暂无释义，试着查看其它释义'}
+            </p>
           </div>
           <div className="word-detail-pronunciation">
-            <button className="tone-tag" type="button">
-              <SoundIcon />
-              美 /{detail.phonetic.us}/
-            </button>
-            <button className="tone-tag" type="button">
-              <SoundIcon />
-              英 /{detail.phonetic.uk}/
-            </button>
+            {recommendedPhonetics.map((item, index) => (
+              <button
+                key={`${item.text}-${item.audio}-${index}`}
+                className="tone-tag"
+                type="button"
+                onClick={() => onPlayAudio(item.audio)}
+                disabled={!item.audio}
+                aria-label={item.audio ? `播放 ${item.text || '发音'}` : '暂无音频'}
+              >
+                <SoundIcon />
+                {item.text || '暂无音标'}
+              </button>
+            ))}
           </div>
         </header>
 
-        <div className="word-detail-meta">
-          <span>词性：{detail.partOfSpeech}</span>
-          <span>常用度：{detail.frequency}</span>
-          <span>词形变化：{detail.inflections}</span>
-        </div>
+        <section className="progress-section">
+          <div className="section-heading">
+            <h2>学习进度</h2>
+            <span>根据回答自动安排下次复习时间</span>
+          </div>
+          <div className="progress-body">
+            <div className="progress-stats">
+              <div>
+                <span className="progress-label">当前等级</span>
+                <strong>Lv.{progressInfo.level}</strong>
+              </div>
+              <div>
+                <span className="progress-label">下次复习</span>
+                <strong>{progressInfo.dueLabel}</strong>
+              </div>
+            </div>
+            <div className="progress-actions">
+              <button
+                className="progress-button success"
+                type="button"
+                onClick={() => onProgressUpdate(true)}
+              >
+                我记住了
+              </button>
+              <button
+                className="progress-button retry"
+                type="button"
+                onClick={() => onProgressUpdate(false)}
+              >
+                需要复习
+              </button>
+            </div>
+          </div>
+          {progressInfo.history.length > 0 && (
+            <ul className="progress-history">
+              {progressInfo.history.map((item) => (
+                <li key={item.t}>
+                  <span className={item.correct ? 'history-correct' : 'history-wrong'}>
+                    {item.correct ? '✔︎' : '✘'}
+                  </span>
+                  <span>{formatHistoryTime(item.t)}</span>
+                  <span>{item.correct ? '记住了' : '没记住'}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <section className="meaning-section">
           <h2>核心释义</h2>
           <div className="meaning-list">
-            {detail.meanings.map((item) => (
-              <article className="meaning-card" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
+            {detail.highlights.length === 0 ? (
+              <article className="meaning-card empty">暂无释义信息</article>
+            ) : (
+              detail.highlights.map((item, index) => (
+                <article className="meaning-card" key={`${item.definition}-${index}`}>
+                  <h3>{item.partOfSpeech || '释义'}</h3>
+                  <p>{item.definition}</p>
+                </article>
+              ))
+            )}
           </div>
         </section>
 
         <section className="example-section">
           <div className="section-heading">
-            <h2>AI 情景例句</h2>
-            <span>贴近你的生活场景</span>
+            <h2>例句</h2>
+            <span>理解使用场景</span>
           </div>
-          <ul className="example-list">
-            {detail.examples.map((item) => (
-              <li key={item.en}>
-                <p className="example-en">{item.en}</p>
-                <p className="example-zh">{item.zh}</p>
-              </li>
-            ))}
-          </ul>
+          {detail.examples.length === 0 ? (
+            <p className="examples-empty">暂无例句，可尝试其他词形</p>
+          ) : (
+            <ul className="example-list">
+              {detail.examples.map((item) => (
+                <li key={item.en}>
+                  <p className="example-en">{item.en}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        <section className="phrase-section">
-          <div className="section-heading">
-            <h2>常见搭配</h2>
-            <span>助你灵活运用</span>
-          </div>
-          <div className="phrase-tags">
-            {recommendedPhrases.map((item) => (
-              <span className="phrase-tag" key={item}>
-                {item}
-              </span>
-            ))}
-          </div>
-        </section>
+        {detail.synonyms.length > 0 && (
+          <section className="phrase-section">
+            <div className="section-heading">
+              <h2>同义拓展</h2>
+              <span>拓宽表达方式</span>
+            </div>
+            <div className="phrase-tags">
+              {detail.synonyms.map((item) => (
+                <span className="phrase-tag" key={item}>
+                  {item}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
-        <div className="ai-cards">
-          <article className="ai-card memory">
-            <div>
-              <h3>谐音记忆法</h3>
-              <p>AI 帮你生成趣味故事，让发音和释义一听就懂。</p>
-            </div>
-            <button className="ai-action" type="button">
-              立即生成
-            </button>
-          </article>
-          <article className="ai-card dialogue">
-            <div>
-              <h3>AI 场景对话</h3>
-              <p>模拟真实交流环境，迅速掌握单词在对话中的运用。</p>
-            </div>
-            <button className="ai-action" type="button">
-              去实战
-            </button>
-          </article>
-        </div>
+        {detail.sourceUrls.length > 0 && (
+          <footer className="source-footer">
+            <span>数据来源：</span>
+            {detail.sourceUrls.map((url) => (
+              <a key={url} href={url} target="_blank" rel="noreferrer">
+                {url}
+              </a>
+            ))}
+          </footer>
+        )}
       </div>
     </section>
   )
 }
 
-const wordDetail = {
-  word: 'charger',
-  translation: 'n. 充电器；充电线',
-  phonetic: {
-    us: "ˈtʃɑːrdʒər",
-    uk: "ˈtʃɑːdʒə",
-  },
-  partOfSpeech: '名词',
-  frequency: '旅行必备',
-  inflections: 'chargers',
-  meanings: [
-    {
-      title: '给电子设备补充能量的工具',
-      description:
-        '最常见的含义，指为手机、电脑等电子设备供电的充电头或充电器。',
-    },
-    {
-      title: '交通、旅途必带的随身物品',
-      description:
-        '在旅行场景下常指随身携带的便携式充电器或充电宝。',
-    },
-    {
-      title: '引申：为某事提供动力的人或物',
-      description:
-        '在团队语境中可表示“动力来源”，用于形容鼓舞士气的人。',
-    },
-  ],
-  examples: [
-    {
-      en: "I forgot to pack my phone charger, so I need to buy one at the airport.",
-      zh: '我忘了带手机充电器，只能在机场赶紧买一个。',
-    },
-    {
-      en: 'This hotel provides a universal charger for international travelers.',
-      zh: '这家酒店为国际旅客提供通用充电器。',
-    },
-    {
-      en: 'My power bank can charge multiple devices; it’s a real life-saver during long trips.',
-      zh: '我的充电宝能给多台设备充电，长途旅行时特别靠谱。',
-    },
-  ],
-  phrases: ['portable charger', 'wireless charger', 'charging cable', 'fast charger'],
-}
-
 function App() {
-  const [view, setView] = useState('landing')
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('idle')
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+  const [cache, setCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.cache, {}))
+  const [hotWords, setHotWords] = useState(() =>
+    safeReadFromStorage(STORAGE_KEYS.hotWords, DEFAULT_HOT_WORDS),
+  )
+  const [progress, setProgress] = useState(() =>
+    safeReadFromStorage(STORAGE_KEYS.progress, {}),
+  )
 
-  const handleNavigate = () => {
-    setView('detail')
-  }
+  const cacheRef = useRef(cache)
 
-  const handleBack = () => {
-    setView('landing')
-  }
+  useEffect(() => {
+    cacheRef.current = cache
+    if (isBrowser) {
+      window.localStorage.setItem(STORAGE_KEYS.cache, JSON.stringify(cache))
+    }
+  }, [cache])
+
+  useEffect(() => {
+    if (isBrowser) {
+      window.localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify(progress))
+    }
+  }, [progress])
+
+  useEffect(() => {
+    if (isBrowser) {
+      window.localStorage.setItem(STORAGE_KEYS.hotWords, JSON.stringify(hotWords))
+    }
+  }, [hotWords])
+
+  const updateHotWords = useCallback((detail) => {
+    setHotWords((prevHotWords) => {
+      const list = Array.isArray(prevHotWords) ? prevHotWords : []
+      const summary = {
+        word: detail.word,
+        definition: detail.primaryDefinition || '暂无释义',
+        phonetic: detail.phonetics[0]?.text ?? '',
+      }
+      const filtered = list.filter(
+        (item) => item.word.toLowerCase() !== summary.word.toLowerCase(),
+      )
+      return [summary, ...filtered].slice(0, 12)
+    })
+  }, [])
+
+  const handlePlayAudio = useCallback((audioUrl) => {
+    if (!audioUrl) return
+    const audio = new Audio(audioUrl)
+    audio.play().catch((err) => {
+      console.warn('音频播放失败', err)
+    })
+  }, [])
+
+  const fetchWordDetail = useCallback(async (targetWord) => {
+    if (!targetWord) {
+      throw new Error('请输入要查询的单词')
+    }
+
+    const normalized = targetWord.trim().toLowerCase()
+    if (!normalized) {
+      throw new Error('请输入要查询的单词')
+    }
+
+    const cachedEntry = cacheRef.current[normalized]
+    if (cachedEntry) {
+      return cachedEntry.detail
+    }
+
+    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${normalized}`)
+    const data = await response.json()
+    if (!response.ok) {
+      const message = data?.title || data?.message || '未查询到结果'
+      throw new Error(message)
+    }
+
+    const detail = transformDictionaryResponse(data)
+    setCache((prev) => ({
+      ...prev,
+      [normalized]: {
+        detail,
+        fetchedAt: Date.now(),
+      },
+    }))
+    return detail
+  }, [])
+
+  const handleSearch = useCallback(
+    async (word) => {
+      setError('')
+      setStatus('loading')
+      try {
+        const detail = await fetchWordDetail(word || query)
+        setResult(detail)
+        setStatus('success')
+        updateHotWords(detail)
+      } catch (err) {
+        setStatus('error')
+        setResult(null)
+        setError(err instanceof Error ? err.message : '查询失败，请稍后再试')
+      }
+    },
+    [fetchWordDetail, query, updateHotWords],
+  )
+
+  const handleSubmit = useCallback(
+    (event) => {
+      event.preventDefault()
+      handleSearch()
+    },
+    [handleSearch],
+  )
+
+  const handleProgressUpdate = useCallback(
+    (correct) => {
+      if (!result?.word) return
+      const key = result.word.toLowerCase()
+      setProgress((prev) => {
+        const entry = prev[key] ?? { level: 0, due: Date.now(), history: [] }
+        const nextLevel = correct ? Math.min(entry.level + 1, 5) : 0
+        const intervalIndex = Math.max(Math.min(nextLevel || 1, PROGRESS_INTERVALS_HOURS.length), 1) - 1
+        const dueOffsetHours = PROGRESS_INTERVALS_HOURS[intervalIndex]
+        const due = Date.now() + dueOffsetHours * 60 * 60 * 1000
+        const history = [...(entry.history ?? []), { t: Date.now(), correct }].slice(-10)
+        return {
+          ...prev,
+          [key]: {
+            level: nextLevel,
+            due,
+            history,
+          },
+        }
+      })
+    },
+    [result?.word],
+  )
+
+  const reviewQueue = useMemo(() => {
+    const now = Date.now()
+    return Object.entries(progress)
+      .map(([word, entry]) => ({
+        word,
+        level: entry.level ?? 0,
+        due: entry.due ?? now,
+      }))
+      .sort((a, b) => a.due - b.due)
+      .slice(0, 5)
+  }, [progress])
+
+  const currentProgress = useMemo(() => {
+    if (!result?.word) {
+      return {
+        level: 0,
+        dueLabel: '尚未安排',
+        history: [],
+      }
+    }
+    const key = result.word.toLowerCase()
+    const entry = progress[key]
+    if (!entry) {
+      return {
+        level: 0,
+        dueLabel: '尚未安排',
+        history: [],
+      }
+    }
+    return {
+      level: entry.level ?? 0,
+      dueLabel: formatDueTime(entry.due),
+      history: entry.history ?? [],
+    }
+  }, [progress, result?.word])
+
+  const handleHotWordSelect = useCallback(
+    (word) => {
+      setQuery(word)
+      handleSearch(word)
+    },
+    [handleSearch],
+  )
+
+  const searchStatusMessage = useMemo(() => {
+    if (status === 'loading') return '正在查询词典数据...'
+    if (status === 'error' && error) return error
+    if (status === 'success' && result) return `查询完成：${result.word}`
+    return '输入单词，立即查阅释义和例句'
+  }, [status, error, result])
 
   return (
     <div className="page">
@@ -443,10 +593,126 @@ function App() {
       </header>
 
       <main className="content">
-        {view === 'landing' ? (
-          <LandingView onNavigate={handleNavigate} />
+        <section className="hero">
+          <div className="hero-text">
+            <h1 className="hero-title">你的智能词典伙伴</h1>
+            <p className="hero-subtitle">结合开源词典与间隔重复系统，帮你高效背单词</p>
+          </div>
+
+          <form className="hero-search" onSubmit={handleSubmit}>
+            <SearchIcon />
+            <input
+              id="word-search"
+              type="text"
+              placeholder="输入英文单词，按 Enter 查询"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+            />
+            <button className="search-action" type="submit">
+              开始探索
+            </button>
+          </form>
+          <p
+            className={`search-status ${
+              status === 'loading' ? 'loading' : status === 'error' ? 'error' : 'idle'
+            }`}
+          >
+            {searchStatusMessage}
+          </p>
+        </section>
+
+        <section className="daily-words">
+          <div className="daily-header">
+            <h2>热点单词</h2>
+            <span className="daily-subtitle">最近搜索与常用词，点击即可复习</span>
+          </div>
+          <div className="word-grid">
+            {hotWords.map((item) => {
+              const progressEntry = progress[item.word.toLowerCase()]
+              return (
+                <article
+                  className="word-card"
+                  key={item.word}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleHotWordSelect(item.word)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleHotWordSelect(item.word)
+                    }
+                  }}
+                >
+                  <div className="word-card-header">
+                    <h3>{item.word}</h3>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        handleHotWordSelect(item.word)
+                      }}
+                      aria-label={`重新查询 ${item.word}`}
+                    >
+                      <SearchIcon />
+                    </button>
+                  </div>
+                  <p className="word-translation">{item.definition}</p>
+                  <div className="word-meta">
+                    {item.phonetic && (
+                      <div className="word-meta-item">
+                        <SoundIcon />
+                        <span>{item.phonetic}</span>
+                      </div>
+                    )}
+                    <div className="word-meta-item">
+                      <SparkleIcon />
+                      <span>Lv.{progressEntry?.level ?? 0}</span>
+                    </div>
+                    <div className="word-meta-item">
+                      <ClockIcon />
+                      <span>{formatDueTime(progressEntry?.due)}</span>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+
+        {reviewQueue.length > 0 && (
+          <section className="review-section">
+            <div className="section-heading">
+              <h2>待复习列表</h2>
+              <span>按照到期时间排序</span>
+            </div>
+            <ul className="review-list">
+              {reviewQueue.map((item) => (
+                <li key={item.word}>
+                  <div>
+                    <strong>{item.word}</strong>
+                    <span className="review-meta">Lv.{item.level}</span>
+                  </div>
+                  <span>{formatDueTime(item.due)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {result ? (
+          <WordDetailView
+            detail={result}
+            progressInfo={currentProgress}
+            onProgressUpdate={handleProgressUpdate}
+            onPlayAudio={handlePlayAudio}
+          />
         ) : (
-          <WordDetailView detail={wordDetail} onBack={handleBack} />
+          <div className="result-placeholder">
+            <h2>开始探索你的词汇宇宙</h2>
+            <p>查询任意单词即可看到释义、例句、发音与学习进度。</p>
+          </div>
         )}
       </main>
     </div>
