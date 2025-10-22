@@ -1,0 +1,141 @@
+{
+    "name": "lex.gaodun.com",
+    "version": "0.0.1",
+    "description": "Gaodun Education Lex Project",
+    "keywords": [
+        "react",
+        "typescript",
+        "rsbuild",
+        "antd",
+        "education"
+    ],
+    "homepage": "https://lex.gaodun.com",
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.com/gaodun/ep5.gaodun.com.git"
+    },
+    "scripts": {
+        "dev": "cross-env CROSS_ENV='dev' rsbuild dev",
+        "start": "cross-env CROSS_ENV='dev' rsbuild dev",
+        "start:https": "HTTPS=true cross-env CROSS_ENV='dev' rsbuild dev",
+        "build": "cross-env CROSS_ENV='production' rsbuild build",
+        "build:dev": "cross-env CROSS_ENV='dev' rsbuild build",
+        "build:test": "cross-env CROSS_ENV='test' rsbuild build",
+        "build:prepare": "cross-env CROSS_ENV='prepare' rsbuild build",
+        "preview": "rsbuild preview",
+        "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+        "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+        "lint:style": "stylelint \"src/**/*.{css,scss,less}\"",
+        "lint:style:fix": "stylelint \"src/**/*.{css,scss,less}\" --fix",
+        "type-check": "tsc --noEmit",
+        "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+        "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+        "clean": "rm -rf dist",
+        "analyze": "cross-env CROSS_ENV='production' ANALYZE=true rsbuild build"
+    },
+    "eslintConfig": {
+        "extends": "react-app"
+    },
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@ant-design/icons": "5.6.1",
+        "@rsbuild/core": "^1.5.2",
+        "@rsbuild/plugin-basic-ssl": "^1.2.1",
+        "@rsbuild/plugin-react": "^1.4.0",
+        "@rsbuild/plugin-sass": "^1.4.0",
+        "@rsbuild/plugin-svgr": "^1.2.2",
+        "@tanstack/react-query": "^5.90.3",
+        "ahooks": "^3.9.5",
+        "antd": "5.27.0",
+        "clsx": "2.1.1",
+        "cross-env": "^10.0.0",
+        "path-to-regexp": "^6.2.1",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-router-dom": "6.30.1"
+    },
+    "devDependencies": {
+        "@ant-design/cssinjs": "1.24.0",
+        "@babel/core": "^7.11.0",
+        "@babel/eslint-parser": "7.25.9",
+        "@babel/plugin-syntax-flow": "^7.14.5",
+        "@babel/plugin-transform-react-jsx": "^7.14.9",
+        "@gaodun.com/commitlint": "1.0.2",
+        "@gaodun.com/eslint-config-selling": "1.0.6",
+        "@gaodun.com/prettier-config": "1.0.3",
+        "@gaodun.com/stylelint": "^1.0.6",
+        "@tanstack/react-query-devtools": "^5.90.2",
+        "@types/node": "^20.11.19",
+        "@types/qs": "^6.9.11",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "@types/react-router-dom": "^5.3.3",
+        "@typescript-eslint/eslint-plugin": "7.18.0",
+        "@typescript-eslint/parser": "7.18.0",
+        "axios": "^1.11.0",
+        "babel-plugin-import": "^1.13.8",
+        "commitlint": "^19.8.1",
+        "eslint": "8.57.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-import": "2.31.0",
+        "eslint-plugin-oxlint": "0.11.1",
+        "eslint-plugin-prettier": "5.2.1",
+        "eslint-plugin-react": "7.37.2",
+        "eslint-plugin-react-hooks": "4.6.2",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.1.5",
+        "postcss": "^8.4.31",
+        "postcss-scss": "4.0.9",
+        "prettier": "^3.3.3",
+        "qs": "^6.11.2",
+        "sass": "^1.77.8",
+        "stylelint": "16.10.0",
+        "stylelint-config-recommended-scss": "14.1.0",
+        "stylelint-config-standard": "36.0.1",
+        "stylelint-order": "6.0.4",
+        "stylelint-scss": "6.9.0",
+        "tailwind-merge": "^2.5.2",
+        "tailwind-scrollbar": "^3.1.0",
+        "tailwindcss": "^3.4.17",
+        "tailwindcss-animate": "1.0.7",
+        "typescript": "^5.9.2",
+        "webpack": ">=1.11.0"
+    },
+    "lint-staged": {
+        "src/**/*.{js,jsx,ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "src/**/*.{less,scss,css}": [
+            "stylelint --config ./.stylelintrc --fix",
+            "prettier --write"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
+    },
+    "packageManager": "pnpm@10.13.1",
+    "engines": {
+        "node": ">=18.0.0",
+        "pnpm": ">=8.0.0"
+    },
+    "browserslist": [
+        "> 1%",
+        "last 2 versions",
+        "not dead",
+        "not ie 11"
+    ],
+    "pnpm": {
+        "peerDependencyRules": {
+            "allowedVersions": {
+                "@typescript-eslint/parser": "^5 || ^7",
+                "@typescript-eslint/eslint-plugin": "^5 || ^7"
+            }
+        }
+    },
+    "volta": {
+        "node": "20.19.5",
+        "pnpm": "10.13.1"
+    }
+}

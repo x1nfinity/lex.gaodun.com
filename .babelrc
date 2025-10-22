@@ -1,0 +1,12 @@
+{
+    "plugins": [
+        [
+            "import",
+            {
+                "libraryName": "@gaodun.com/gtools",
+                "libraryDirectory": "dist"
+            },
+            "gaodun.com/gtools"
+        ]
+    ]
+}
