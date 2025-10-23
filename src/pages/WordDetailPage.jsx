@@ -109,12 +109,12 @@ const WordDetailPage = () => {
         <section className="meaning-section">
           <h2>核心释义</h2>
           <div className="meaning-list">
-            {detail.meanings.map((item) => (
+            {detail.meanings ? detail.meanings.map((item) => (
               <article className="meaning-card" key={`${item.title}-${item.description}`}>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </article>
-            ))}
+            )) : null}
           </div>
         </section>
 
