@@ -77,6 +77,9 @@ const WordDetailPage = () => {
     const [loadingPhase, setLoadingPhase] = useState(0);
     const [dictionaryAudio, setDictionaryAudio] = useState({ us: null, uk: null });
     const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+    const [hasGeneratedVideo, setHasGeneratedVideo] = useState(false);
+    const [showGenerateHint, setShowGenerateHint] = useState(false);
+    const [showContactMessage, setShowContactMessage] = useState(false);
 
     // 使用 text2video hook
     const { isLoading: isVideoGenerating, progressMessage, error: videoError, result: videoResult, generateVideo } = useText2Video();
@@ -135,6 +138,13 @@ const WordDetailPage = () => {
             cancelled = true;
         };
     }, [word, fetchWordDetail]);
+
+    // 检查用户是否已经生成过视频
+    useEffect(() => {
+        const hasGenerated = localStorage.getItem('lex.video.generated') === 'true';
+        setHasGeneratedVideo(hasGenerated);
+    }, []);
+
     useEffect(() => {
         if (status !== 'loading') {
             setLoadingPhase(0);
@@ -168,10 +178,30 @@ const WordDetailPage = () => {
 
     const handleGenerateVideo = async () => {
         if (!detail?.word) return;
+
+        // 检查用户是否已经生成过视频
+        if (hasGeneratedVideo) {
+            setShowContactMessage(true);
+            // 3秒后自动隐藏联系客服消息
+            setTimeout(() => setShowContactMessage(false), 10000);
+            return;
+        }
+
+        // 第一次生成，显示提示消息
+        setShowGenerateHint(true);
+        // // 10秒后自动隐藏提示消息
+        setTimeout(() => setShowGenerateHint(false), 10000);
+
         try {
             await generateVideo(detail.word);
+            // 标记用户已经生成过视频
+            setHasGeneratedVideo(true);
+            // 保存到localStorage，确保刷新页面后仍然有效
+            localStorage.setItem('lex.video.generated', 'true');
         } catch (err) {
             console.error('视频生成失败:', err);
+        } finally {
+            setShowGenerateHint(false);
         }
     };
 
@@ -288,18 +318,11 @@ const WordDetailPage = () => {
                             <>
                                 <p className='ai-card-description'>生成 10 秒创意故事，把发音、释义与画面一次记住。</p>
                                 <ul className='ai-card-list'>
-                                    <li>自动设计 2-3 个镜头，强调谐音钩子</li>
                                     <li>结合你的水平与偏好，匹配台词语气</li>
+                                    <li>免费用户仅限一次生成机会</li>
                                 </ul>
                             </>
                         )}
-
-                        {/* 视频生成状态显示 */}
-                        {/* {isVideoGenerating && (
-                            <div className='video-progress'>
-                                <p>{progressMessage || '视频生成中...'}</p>
-                            </div>
-                        )} */}
 
                         {/* 视频错误显示 */}
                         {videoError && (
@@ -317,6 +340,97 @@ const WordDetailPage = () => {
                             </div>
                         )}
 
+                        {/* 提示消息 */}
+                        {showGenerateHint && (
+                            <div
+                                className='contact-message'
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '88px',
+                                    left: '16px',
+                                    padding: '12px 16px',
+                                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                                    border: '1px solid rgba(226, 232, 240, 0.8)',
+                                    borderRadius: '12px',
+                                    fontSize: '14px',
+                                    color: '#1e293b',
+                                    boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
+                                    maxWidth: '240px',
+                                    zIndex: 10,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: '-8px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%) rotate(45deg)',
+                                        width: '16px',
+                                        height: '16px',
+                                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                                        borderRight: '1px solid rgba(226, 232, 240, 0.8)',
+                                        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                                        zIndex: -1,
+                                    }}
+                                ></div>
+                                <p style={{ margin: 0, fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <p>⏳ 生成比较慢，建议等待生成完成，每个用户只有一次免费生成机会</p>
+                                </p>
+                            </div>
+                            // <div
+                            //     className='generate-hint'
+                            //     style={{
+                            //         marginTop: '12px',
+                            //         padding: '8px',
+                            //         backgroundColor: '#fef3c7',
+                            //         borderRadius: '6px',
+                            //         fontSize: '14px',
+                            //         color: '#92400e',
+                            //     }}
+                            // >
+                            //     <p>⏳ 生成比较慢，建议等待生成完成，每个用户只有一次免费生成机会</p>
+                            // </div>
+                        )}
+
+                        {showContactMessage && (
+                            <div
+                                className='contact-message'
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '88px',
+                                    left: '16px',
+                                    padding: '12px 16px',
+                                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                                    border: '1px solid rgba(226, 232, 240, 0.8)',
+                                    borderRadius: '12px',
+                                    fontSize: '14px',
+                                    color: '#1e293b',
+                                    boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
+                                    maxWidth: '240px',
+                                    zIndex: 10,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: '-8px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%) rotate(45deg)',
+                                        width: '16px',
+                                        height: '16px',
+                                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                                        borderRight: '1px solid rgba(226, 232, 240, 0.8)',
+                                        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                                        zIndex: -1,
+                                    }}
+                                ></div>
+                                <p style={{ margin: 0, fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '16px' }}>📞</span>
+                                    您已经使用过免费生成机会，如需再次生成请联系客服
+                                </p>
+                            </div>
+                        )}
+
                         {/* 如果是预设视频，显示提示信息而不是生成按钮 */}
                         {presetVideoUrl ? (
                             <div className='preset-video-info' style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
@@ -324,7 +438,13 @@ const WordDetailPage = () => {
                             </div>
                         ) : (
                             <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={isVideoGenerating}>
-                                {isVideoGenerating ? progressMessage || '创作中…' : videoResult?.videoUrl ? '重新生成' : '生成谐音短片'}
+                                {isVideoGenerating
+                                    ? progressMessage || '创作中…'
+                                    : hasGeneratedVideo
+                                      ? '已使用免费机会'
+                                      : videoResult?.videoUrl
+                                        ? '重新生成'
+                                        : '生成谐音短片'}
                             </button>
                         )}
                     </article>
