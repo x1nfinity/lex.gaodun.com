@@ -3,6 +3,59 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, SoundIcon, SparkleIcon } from '../components/icons.jsx';
 import { useLexContext } from '../context/LexContext.jsx';
 
+const LOADING_HINTS = [
+    { label: '正在连接权威词库与发音资源...', delay: 0 },
+    { label: 'AI 正在生成符合你水平的释义与例句...', delay: 1600 },
+    { label: '正在挑选贴合你偏好的用法与搭配...', delay: 3200 },
+];
+
+const LoadingSkeleton = ({ word, phase }) => {
+    const displayWord = word || 'AI 正在准备词条';
+    return (
+        <div className='word-detail-loading' aria-live='polite' aria-busy='true'>
+            <div className='loading-card'>
+                <div className='loading-word'>
+                    <span className='loading-chip'>AI 正在准备</span>
+                    <h1 className='loading-title'>{displayWord}</h1>
+                    <div className='skeleton-block skeleton-md' />
+                </div>
+                <div className='loading-meta'>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div key={`meta-${index}`} className='skeleton-block skeleton-pill' />
+                    ))}
+                </div>
+            </div>
+
+            <div className='loading-card'>
+                <div className='skeleton-block skeleton-heading' />
+                <div className='skeleton-grid'>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div key={`meaning-${index}`} className='skeleton-block skeleton-meaning' />
+                    ))}
+                </div>
+            </div>
+
+            <div className='loading-card'>
+                <div className='skeleton-block skeleton-heading' />
+                <div className='skeleton-list'>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div key={`example-${index}`} className='skeleton-block skeleton-example' />
+                    ))}
+                </div>
+            </div>
+
+            <div className='loading-steps' role='status'>
+                {LOADING_HINTS.map((hint, index) => (
+                    <div key={hint.label} className={`loading-step ${index <= phase ? 'active' : ''}`}>
+                        <span className='loading-dot' />
+                        <span>{hint.label}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 const WordDetailPage = () => {
     const { word } = useParams();
     const navigate = useNavigate();
@@ -13,6 +66,7 @@ const WordDetailPage = () => {
     const [videoStatus, setVideoStatus] = useState('idle'); // idle, loading, success, error
     const [videoResult, setVideoResult] = useState(null);
     const [videoError, setVideoError] = useState('');
+    const [loadingPhase, setLoadingPhase] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
@@ -41,6 +95,23 @@ const WordDetailPage = () => {
             cancelled = true;
         };
     }, [word, fetchWordDetail]);
+
+    useEffect(() => {
+        if (status !== 'loading') {
+            setLoadingPhase(0);
+            return undefined;
+        }
+
+        setLoadingPhase(0);
+        const timers = LOADING_HINTS.slice(1).map((hint, index) =>
+            setTimeout(() => {
+                setLoadingPhase(index + 1);
+            }, hint.delay)
+        );
+        return () => {
+            timers.forEach(timer => clearTimeout(timer));
+        };
+    }, [status]);
 
     const recommendedPhrases = useMemo(() => detail?.phrases?.slice(0, 3) ?? [], [detail?.phrases]);
 
@@ -86,7 +157,7 @@ const WordDetailPage = () => {
 
     const renderContent = () => {
         if (status === 'loading') {
-            return <p className='word-detail-message'>正在查询，请稍候...</p>;
+            return <LoadingSkeleton word={word} phase={loadingPhase} />;
         }
 
         if (status === 'error') {
@@ -96,8 +167,6 @@ const WordDetailPage = () => {
         if (!detail) {
             return <p className='word-detail-message'>暂无数据，请返回重试。</p>;
         }
-        console.log(detail);
-
         return (
             <>
                 <header className='word-detail-header'>
@@ -180,21 +249,41 @@ const WordDetailPage = () => {
 
                 <div className='ai-cards'>
                     <article className='ai-card memory'>
-                        <div>
-                            <h3>谐音记忆法</h3>
-                            <p>AI 帮你生成趣味故事，让发音和释义一听就懂。</p>
+                        <div className='ai-card-header'>
+                            <span className='ai-card-icon' aria-hidden='true'>
+                                🎬
+                            </span>
+                            <div>
+                                <p className='ai-card-tag'>智能谐音短片</p>
+                                <h3>谐音记忆法</h3>
+                            </div>
                         </div>
+                        <p className='ai-card-description'>生成 10 秒创意故事，把发音、释义与画面一次记住。</p>
+                        <ul className='ai-card-list'>
+                            <li>自动设计 2-3 个镜头，强调谐音钩子</li>
+                            <li>结合你的水平与偏好，匹配台词语气</li>
+                        </ul>
                         <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={videoStatus === 'loading'}>
-                            {videoStatus === 'loading' ? '生成中...' : '立即生成'}
+                            {videoStatus === 'loading' ? '创作中…' : '生成谐音短片'}
                         </button>
                     </article>
                     <article className='ai-card dialogue'>
-                        <div>
-                            <h3>AI 场景对话</h3>
-                            <p>模拟真实交流环境，迅速掌握单词在对话中的运用。</p>
+                        <div className='ai-card-header'>
+                            <span className='ai-card-icon' aria-hidden='true'>
+                                💬
+                            </span>
+                            <div>
+                                <p className='ai-card-tag'>多轮场景演练</p>
+                                <h3>AI 场景对话</h3>
+                            </div>
                         </div>
-                        <button className='ai-action' type='button' onClick={handleStartChat}>
-                            去实战
+                        <p className='ai-card-description'>沉浸式对话练习，随时切换到最贴近你的真实场景。</p>
+                        <ul className='ai-card-list'>
+                            <li>自动嵌入目标单词与常见搭配</li>
+                            <li>实时中文提示 + 下一步追问</li>
+                        </ul>
+                        <button className='ai-action secondary' type='button' onClick={handleStartChat}>
+                            开始对话
                         </button>
                     </article>
                 </div>
@@ -202,7 +291,8 @@ const WordDetailPage = () => {
                 {/* 视频生成结果展示 */}
                 {videoStatus === 'loading' && (
                     <div className='video-result loading'>
-                        <p>正在生成谐音记忆视频，请稍候...</p>
+                        <p>AI 正在编写谐音剧情并渲染短视频，大约需要 10-15 秒完成。</p>
+                        <p className='video-note'>我们完成后会自动推送至后台任务列表，你可稍后回来查看成品。</p>
                     </div>
                 )}
 
@@ -233,10 +323,10 @@ const WordDetailPage = () => {
                     <ArrowLeftIcon />
                     返回探索
                 </button>
-                <button className='sync-button' type='button'>
+                {/* <button className='sync-button' type='button'>
                     <SparkleIcon />
                     同步收藏
-                </button>
+                </button> */}
             </div>
 
             <div className='word-detail-card'>{renderContent()}</div>

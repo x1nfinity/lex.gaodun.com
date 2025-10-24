@@ -4,15 +4,116 @@ import { ArrowLeftIcon } from '../components/icons.jsx';
 import { useLexContext } from '../context/LexContext.jsx';
 
 const SUGGESTION_TEMPLATES = [
-    '请模拟一个职场对话，让我学会如何使用 "{word}"。',
-    '帮我区分 "{word}" 和它的常见搭配，并提供练习题。',
-    '设计一个包含 "{word}" 的生活场景对话，我来尝试回答。',
+    {
+        id: 'Daily Life English',
+        match: 'Daily Life English',
+        prompts: [
+            '请带我进入一个关于 "{word}" 的日常对话，比如和朋友闲聊或邻里互动。',
+            '设计一个家庭生活场景，让我通过家务或亲子对话练习 "{word}"。',
+            '结合社交媒体或线下聚会，模拟使用 "{word}" 的轻松交流场景。',
+        ],
+    },
+    {
+        id: 'Business English',
+        match: 'Business English',
+        prompts: [
+            '构建一个项目会议或商务谈判的对话，让我练习在专业场合运用 "{word}"。',
+            '帮我写一封职场邮件或汇报稿，把 "{word}" 自然融入其中。',
+            '模拟一次绩效面谈或跨部门协作讨论，突出 "{word}" 的表达方式。',
+        ],
+    },
+    {
+        id: 'Travel English',
+        match: 'Travel English',
+        prompts: [
+            '请模拟机场值机或过海关的对话场景，让我学会在旅途中使用 "{word}"。',
+            '设计一段酒店入住或餐厅点餐的交流，帮助我练习 "{word}"。',
+            '创建一个问路或应急求助的场景，指导我灵活运用 "{word}"。',
+        ],
+    },
+    {
+        id: 'Academic English',
+        match: 'Academic English',
+        prompts: [
+            '安排一次课堂讨论或学术辩论环节，围绕 "{word}" 展开发言。',
+            '请提供一段文献摘录或论文段落，引导我用学术语言释义 "{word}"。',
+            '给我布置一个演讲或口头报告任务，要求多次使用 "{word}"。',
+        ],
+    },
+    {
+        id: 'Exam Preparation',
+        match: 'Exam Preparation',
+        prompts: [
+            '设计一组填空或改错题，帮助我巩固 "{word}" 在考试中的考法。',
+            '请提供 TOEFL/IELTS 口语题目，要求我用 "{word}" 构建答案。',
+            '给我一个写作题目大纲，提醒我在段落中有效运用 "{word}"。',
+        ],
+    },
+    {
+        id: 'Study Abroad / Immigration',
+        match: 'Study Abroad / Immigration',
+        prompts: [
+            '模拟一次签证面试或入学面试，强调 "{word}" 的地道表达。',
+            '请设计课堂回答或小组作业讨论，帮助我在海外课堂中使用 "{word}"。',
+            '构建一个海外生活的适应场景，例如租房或银行开户，让我练习 "{word}"。',
+        ],
+    },
+    {
+        id: 'Hobby / Pop Culture',
+        match: 'Hobby / Pop Culture',
+        prompts: [
+            '结合电影台词或歌曲歌词，模拟使用 "{word}" 的娱乐对话。',
+            '设计一次粉丝见面会或直播互动，让我用 "{word}" 表达观点。',
+            '请创建一个影视评论或剧本创作的片段，强调 "{word}" 的用法。',
+        ],
+    },
+    {
+        id: 'Speaking Practice',
+        match: 'Speaking Practice',
+        prompts: [
+            '安排一段绕口令式的口语训练，多次重复 "{word}" 来纠正发音。',
+            '请扮演口语教练，针对 "{word}" 做角色扮演练习并给我反馈。',
+            '设计一个逐步升级的问答练习，从基础到进阶掌握 "{word}"。',
+        ],
+    },
+    {
+        id: 'fallback',
+        match: null,
+        prompts: [
+            '请模拟一个职场对话，让我学会如何使用 "{word}"。',
+            '帮我区分 "{word}" 和它的常见搭配，并提供练习题。',
+            '设计一个包含 "{word}" 的生活场景对话，我来尝试回答。',
+        ],
+    },
 ];
+
+const FALLBACK_TEMPLATE = SUGGESTION_TEMPLATES.find(item => item.match === null);
+
+const selectSuggestions = (preferences = []) => {
+    if (!Array.isArray(preferences) || preferences.length === 0) {
+        return FALLBACK_TEMPLATE?.prompts ?? [];
+    }
+
+    const matchedPrompts = preferences.reduce((accumulator, preference) => {
+        if (typeof preference !== 'string' || !preference.trim()) return accumulator;
+        const template = SUGGESTION_TEMPLATES.find(item => item.match === preference.trim());
+        if (template) {
+            accumulator.push(...template.prompts);
+        }
+        return accumulator;
+    }, []);
+
+    if (matchedPrompts.length === 0) {
+        return FALLBACK_TEMPLATE?.prompts ?? [];
+    }
+
+    return matchedPrompts;
+};
 
 const ChatPage = () => {
     const { word: routeWord } = useParams();
     const navigate = useNavigate();
-    const { fetchWordDetail, sendWordChatMessage } = useLexContext();
+    const { fetchWordDetail, sendWordChatMessage, userProfile } = useLexContext();
     const [wordDetail, setWordDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState('');
@@ -98,10 +199,20 @@ const ChatPage = () => {
         }
     }, [messages, sending]);
 
-    const suggestions = useMemo(
-        () => SUGGESTION_TEMPLATES.map(item => item.replace('{word}', displayWord)),
-        [displayWord]
-    );
+    const preferenceSignature = useMemo(() => {
+        if (!Array.isArray(userProfile?.contentPreferences) || userProfile.contentPreferences.length === 0) {
+            return '[]';
+        }
+        const unique = Array.from(new Set(userProfile.contentPreferences.filter(item => typeof item === 'string' && item.trim())));
+        return JSON.stringify(unique);
+    }, [userProfile?.contentPreferences]);
+
+    const suggestions = useMemo(() => {
+        const values = JSON.parse(preferenceSignature);
+        const pool = selectSuggestions(values);
+        const unique = Array.from(new Set(pool));
+        return unique.slice(0, 3).map(item => item.replace('{word}', displayWord));
+    }, [displayWord, preferenceSignature]);
 
     const handleSend = async overrideText => {
         const text = typeof overrideText === 'string' ? overrideText.trim() : inputValue.trim();
@@ -169,9 +280,7 @@ const ChatPage = () => {
             <div key={message.id} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
                 <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm ${
-                        isAssistant
-                            ? 'bg-white text-slate-900 ring-1 ring-slate-100'
-                            : 'bg-indigo-600 text-indigo-50'
+                        isAssistant ? 'bg-white text-slate-900 ring-1 ring-slate-100' : 'bg-indigo-600 text-indigo-50'
                     }`}
                 >
                     {pieces.map((line, index) => (
@@ -208,9 +317,7 @@ const ChatPage = () => {
                         ) : null}
                     </h1>
                     <p className='text-base text-slate-600'>
-                        {detailLoading
-                            ? '正在加载释义...'
-                            : wordDetail?.translation || '暂无释义，尽情与我对话探索它的用法吧。'}
+                        {detailLoading ? '正在加载释义...' : wordDetail?.translation || '暂无释义，尽情与我对话探索它的用法吧。'}
                     </p>
                     {detailError ? (
                         <div className='rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600'>{detailError}</div>
@@ -218,10 +325,7 @@ const ChatPage = () => {
                     {wordDetail?.phrases?.length ? (
                         <div className='flex flex-wrap gap-2 pt-1'>
                             {wordDetail.phrases.slice(0, 4).map(item => (
-                                <span
-                                    key={item}
-                                    className='rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600'
-                                >
+                                <span key={item} className='rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600'>
                                     {item}
                                 </span>
                             ))}
@@ -291,4 +395,3 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
-

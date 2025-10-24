@@ -319,6 +319,151 @@
     gap: 32px;
 }
 
+.word-detail-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.word-detail-loading .loading-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 28px;
+    padding: 28px 32px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.word-detail-loading .loading-word {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.word-detail-loading .loading-chip {
+    align-self: flex-start;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.12);
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.word-detail-loading .loading-title {
+    margin: 0;
+    font-size: 38px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.word-detail-loading .loading-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.skeleton-block {
+    position: relative;
+    overflow: hidden;
+    background: rgba(226, 232, 240, 0.6);
+    border-radius: 16px;
+}
+
+.skeleton-block::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+    animation: loading-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-block.skeleton-md {
+    height: 16px;
+    width: 60%;
+}
+
+.skeleton-block.skeleton-pill {
+    height: 14px;
+    width: 120px;
+    border-radius: 999px;
+}
+
+.skeleton-block.skeleton-heading {
+    height: 18px;
+    width: 160px;
+    border-radius: 12px;
+}
+
+.skeleton-block.skeleton-meaning {
+    height: 110px;
+}
+
+.skeleton-block.skeleton-example {
+    height: 72px;
+    border-radius: 20px;
+}
+
+.word-detail-loading .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+}
+
+.word-detail-loading .skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 0 0;
+}
+
+.loading-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #94a3b8;
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.loading-step.active {
+    color: #4f46e5;
+}
+
+.loading-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.6);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.loading-step.active .loading-dot {
+    background: linear-gradient(120deg, #4f46e5, #2563eb);
+    transform: scale(1.1);
+}
+
+@keyframes loading-shimmer {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(250%);
+    }
+}
+
 .word-detail-header {
     display: flex;
     align-items: flex-end;
@@ -681,56 +826,128 @@
 
 .ai-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
 }
 
 .ai-card {
-    border-radius: 28px;
-    padding: 24px;
+    border-radius: 30px;
+    padding: 28px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 16px;
+    gap: 18px;
     color: #1f2937;
+    box-shadow: 0 24px 60px rgba(79, 70, 229, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 .ai-card.memory {
-    background: linear-gradient(135deg, rgba(244, 235, 255, 0.9), rgba(221, 214, 254, 0.9));
+    background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.45), transparent 55%),
+        linear-gradient(135deg, rgba(236, 233, 252, 0.95), rgba(221, 231, 252, 0.92));
 }
 
 .ai-card.dialogue {
-    background: linear-gradient(135deg, rgba(204, 251, 241, 0.9), rgba(165, 243, 252, 0.9));
+    background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.35), transparent 55%),
+        linear-gradient(135deg, rgba(224, 248, 255, 0.95), rgba(228, 253, 246, 0.9));
+}
+
+.ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ai-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+    font-size: 24px;
+}
+
+.ai-card-tag {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(37, 56, 126, 0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
 }
 
 .ai-card h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
+    color: #111827;
 }
 
-.ai-card p {
+.ai-card-description {
     margin: 8px 0 0;
     color: #475569;
+    line-height: 1.6;
+}
+
+.ai-card-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ai-card-list li {
+    font-size: 13px;
+    color: #334155;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.ai-card-list li::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 6px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
 }
 
 .ai-action {
     align-self: flex-start;
     border: none;
-    border-radius: 16px;
-    padding: 10px 20px;
-    background: rgba(30, 64, 175, 0.9);
+    border-radius: 20px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #4f46e5, #2563eb);
     color: #fff;
     font-weight: 600;
     cursor: pointer;
     transition:
         transform 0.2s ease,
-        box-shadow 0.2s ease;
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
+    box-shadow: 0 16px 32px rgba(79, 70, 229, 0.25);
 }
 
 .ai-action:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 30px rgba(30, 64, 175, 0.3);
+    filter: brightness(1.05);
+    box-shadow: 0 20px 40px rgba(79, 70, 229, 0.3);
+}
+
+.ai-action.secondary {
+    background: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
+}
+
+.ai-action.secondary:hover {
+    box-shadow: 0 20px 36px rgba(15, 23, 42, 0.28);
 }
 
 @media (max-width: 768px) {

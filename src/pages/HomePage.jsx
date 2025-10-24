@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLexContext } from '../context/LexContext.jsx';
+import { getEnglishLevelByValue, getLearningContextByValue } from '../data/profileFormOptions.js';
 import { HeartIcon, SearchIcon, SoundIcon } from '../components/icons.jsx';
 
 const HomePage = () => {
@@ -9,9 +10,28 @@ const HomePage = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const nickname = userProfile?.nickname || '学习者';
-    const englishLevel = userProfile?.englishLevel || '英语探索者';
-    const preferenceSummary =
-        userProfile?.contentPreferences?.length > 0 ? userProfile.contentPreferences.slice(0, 2).join('、') : '你的真实需求';
+    const englishLevelValue = userProfile?.englishLevel || '';
+    const englishLevelOption = englishLevelValue ? getEnglishLevelByValue(englishLevelValue) : null;
+    const stripParentheses = text =>
+        (text || '')
+            .replace(/\s*\(.*?\)/g, '')
+            .replace(/（.*?）/g, '')
+            .trim();
+    const englishLevelDisplay = englishLevelOption ? stripParentheses(englishLevelOption.label) : englishLevelValue || '英语探索者';
+    const englishLevel = englishLevelValue || '英语探索者';
+    const preferenceValues = Array.isArray(userProfile?.contentPreferences) ? userProfile.contentPreferences : [];
+    const preferenceSummary = preferenceValues.length > 0 ? preferenceValues.slice(0, 2).join('、') : '你的真实需求';
+    const preferenceDisplay =
+        preferenceValues.length > 0
+            ? preferenceValues
+                  .map(value => {
+                      const option = getLearningContextByValue(value);
+                      return option ? stripParentheses(option.label) : value;
+                  })
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join('、')
+            : '你的真实需求';
 
     const handleNavigate = targetWord => {
         const normalized = targetWord?.trim();
@@ -33,8 +53,8 @@ const HomePage = () => {
             <section className='hero'>
                 <div className='hero-text'>
                     <h1 className='hero-title'>欢迎回来，{nickname}</h1>
-                    <p className='hero-subtitle'>
-                        当前水平：{englishLevel} · 推荐内容聚焦{preferenceSummary}
+                    <p className='hero-subtitle' data-ai-level={englishLevel} data-ai-preference={preferenceSummary}>
+                        当前水平：{englishLevelDisplay} · 推荐内容聚焦{preferenceDisplay}
                     </p>
                 </div>
 
@@ -58,9 +78,6 @@ const HomePage = () => {
             <section className='daily-words'>
                 <div className='daily-header'>
                     <h2>今日热词</h2>
-                    <button className='view-all' type='button'>
-                        查看全部
-                    </button>
                 </div>
                 <div className='word-grid'>
                     {hotWords.map(item => (
