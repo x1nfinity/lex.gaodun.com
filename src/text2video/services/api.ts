@@ -146,7 +146,7 @@ function parseScriptContent(content: string, word: string): ScriptResponse {
 
 // 阿里云视频生成API
 export const generateVideo = async (scriptData: ScriptResponse): Promise<VideoResponse> => {
-    const requestUrl = 'https://dashscope.aliyuncs.com/api/aliyun/api/v1/services/aigc/video-generation/video-synthesis';
+    const requestUrl = '/api/aliyun/api/v1/services/aigc/video-generation/video-synthesis';
 
     // 构建更丰富的提示词，包含所有脚本信息
     const enhancedPrompt = `
@@ -216,7 +216,7 @@ export const generateVideo = async (scriptData: ScriptResponse): Promise<VideoRe
 
 // 查询视频生成状态
 export const checkVideoStatus = async (taskId: string): Promise<VideoStatusResponse> => {
-    const requestUrl = `https://dashscope.aliyuncs.com/api/aliyun/api/v1/tasks/${taskId}`;
+    const requestUrl = `/api/aliyun/api/v1/tasks/${taskId}`;
     const requestHeaders = {
         Authorization: `Bearer ${import.meta.env.VITE_REACT_APP_ALIYUN_TOKEN}`,
         'Content-Type': 'application/json',

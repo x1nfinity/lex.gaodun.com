@@ -157,7 +157,7 @@ const describeLearningContexts = values => {
 };
 
 const DOUBAO_CONFIG = {
-    apiKey: 'bd747896-e89b-46f4-a5ab-0a232d086845',
+    apiKey: import.meta.env.VITE_REACT_APP_DOUBAO_TOKEN, // 'bd747896-e89b-46f4-a5ab-0a232d086845',
     endpointId: 'ep-20251015101857-wc8xz',
     apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
 };
@@ -294,7 +294,6 @@ const normalizeDoubaoDetail = (rawDetail, fallbackWord) => {
     if (!rawDetail || typeof rawDetail !== 'object') {
         throw new Error('模型返回内容格式不正确');
     }
-    console.log(rawDetail, 'rawDetail');
 
     const meanings = mergeMeaningList(rawDetail.meanings);
     if (meanings.length === 0) {
@@ -439,7 +438,9 @@ const pickRecentMessages = conversation => {
 const LexContext = createContext(null);
 
 export const LexProvider = ({ children }) => {
-    const [hotWords, setHotWords] = useState(() => safeReadFromStorage(STORAGE_KEYS.hotWords, DEFAULT_HOT_WORDS));
+    const [hotWords, setHotWords] = useState(() => {
+        return safeReadFromStorage(STORAGE_KEYS.hotWords, DEFAULT_HOT_WORDS);
+    });
     const [cache, setCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.cache, {}));
     const [profile, setProfile] = useState(() => normalizeProfile(safeReadFromStorage(STORAGE_KEYS.profile, DEFAULT_PROFILE)));
     const [dictionaryCache, setDictionaryCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.dictionaryCache, {}));
@@ -555,7 +556,6 @@ export const LexProvider = ({ children }) => {
 
             const cachedEntry = cacheRef.current[normalized];
             if (cachedEntry) {
-                updateHotWords(cachedEntry.detail);
                 return cachedEntry.detail;
             }
 
@@ -612,7 +612,6 @@ export const LexProvider = ({ children }) => {
                         fetchedAt: Date.now(),
                     },
                 }));
-                updateHotWords(detail);
                 return detail;
             })();
 

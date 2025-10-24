@@ -110,10 +110,13 @@ const selectSuggestions = (preferences = []) => {
     return matchedPrompts;
 };
 
-const ChatPage = () => {
+const ChatPage = ({ word: propWord, isDrawer = false }) => {
     const { word: routeWord } = useParams();
     const navigate = useNavigate();
     const { fetchWordDetail, sendWordChatMessage, userProfile } = useLexContext();
+
+    // 如果是通过属性传入的单词，则使用属性值，否则使用路由参数
+    const displayWord = propWord || routeWord || '';
     const [wordDetail, setWordDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState('');
@@ -123,8 +126,6 @@ const ChatPage = () => {
     const [chatError, setChatError] = useState('');
     const conversationRef = useRef([]);
     const endRef = useRef(null);
-
-    const displayWord = routeWord ?? '';
 
     useEffect(() => {
         const welcomeMessage = {
@@ -295,19 +296,21 @@ const ChatPage = () => {
 
     return (
         <section className='flex flex-col gap-6'>
-            <div className='flex items-center justify-between'>
-                <button
-                    className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md'
-                    type='button'
-                    onClick={() => navigate(-1)}
-                >
-                    <ArrowLeftIcon />
-                    返回单词页
-                </button>
-                <div className='text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400'>AI 场景对话</div>
-            </div>
+            {!isDrawer && (
+                <div className='flex items-center justify-between'>
+                    <button
+                        className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md'
+                        type='button'
+                        onClick={() => navigate(-1)}
+                    >
+                        <ArrowLeftIcon />
+                        返回单词页
+                    </button>
+                    <div className='text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400'>AI 场景对话</div>
+                </div>
+            )}
 
-            <div className='rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-xl backdrop-blur'>
+            <div className='bg-white/90 p-6 shadow-xl backdrop-blur'>
                 <header className='flex flex-col gap-3 border-b border-slate-100 pb-4'>
                     <div className='text-sm font-semibold text-indigo-500'>练习单词</div>
                     <h1 className='text-3xl font-bold text-slate-900'>

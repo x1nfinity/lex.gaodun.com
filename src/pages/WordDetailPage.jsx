@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, SoundIcon, SparkleIcon } from '../components/icons.jsx';
 import { useLexContext } from '../context/LexContext.jsx';
 import { useText2Video } from '../text2video/lib.ts';
+import ChatPage from './ChatPage.jsx';
 
 const LOADING_HINTS = [
     { label: '正在连接权威词库与发音资源...', delay: 0 },
@@ -69,15 +70,23 @@ const LoadingSkeleton = ({ word, phase }) => {
 const WordDetailPage = () => {
     const { word } = useParams();
     const navigate = useNavigate();
-    const { fetchWordDetail } = useLexContext();
+    const { fetchWordDetail, hotWords } = useLexContext();
     const [status, setStatus] = useState('loading');
     const [detail, setDetail] = useState(null);
     const [error, setError] = useState('');
     const [loadingPhase, setLoadingPhase] = useState(0);
     const [dictionaryAudio, setDictionaryAudio] = useState({ us: null, uk: null });
+    const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
 
     // 使用 text2video hook
     const { isLoading: isVideoGenerating, progressMessage, error: videoError, result: videoResult, generateVideo } = useText2Video();
+
+    // 检查当前单词是否是热词，如果是则使用预设的视频URL
+    const presetVideoUrl = useMemo(() => {
+        if (!word) return null;
+        const hotWord = hotWords.find(item => item.word.toLowerCase() === word.toLowerCase());
+        return hotWord?.videoUrl || null;
+    }, [word, hotWords]);
 
     useEffect(() => {
         let cancelled = false;
@@ -96,7 +105,6 @@ const WordDetailPage = () => {
                     const normalizedWord = word.trim().toLowerCase();
                     const wordCache = parsedCache[normalizedWord];
                     if (wordCache?.phonetics) {
-                        console.log(wordCache?.phonetics, 'wordCache?.phonetics');
                         setDictionaryAudio({
                             us: wordCache.phonetics.us || null,
                             uk: wordCache.phonetics.uk || null,
@@ -127,7 +135,6 @@ const WordDetailPage = () => {
             cancelled = true;
         };
     }, [word, fetchWordDetail]);
-    console.log(dictionaryAudio, 'dictionaryAudio');
     useEffect(() => {
         if (status !== 'loading') {
             setLoadingPhase(0);
@@ -170,8 +177,8 @@ const WordDetailPage = () => {
 
     const handleStartChat = () => {
         if (!detail) return;
-        // 导航到对话页面，并传递单词信息
-        navigate(`/chat/${detail.word}`);
+        // 打开抽屉而不是导航到新页面
+        setIsChatDrawerOpen(true);
     };
 
     const renderContent = () => {
@@ -277,38 +284,49 @@ const WordDetailPage = () => {
                                 <h3>谐音记忆法</h3>
                             </div>
                         </div>
-                        <p className='ai-card-description'>生成 10 秒创意故事，把发音、释义与画面一次记住。</p>
-                        <ul className='ai-card-list'>
-                            <li>自动设计 2-3 个镜头，强调谐音钩子</li>
-                            <li>结合你的水平与偏好，匹配台词语气</li>
-                        </ul>
+                        {(!presetVideoUrl || !videoResult.videoUrl) && (
+                            <>
+                                <p className='ai-card-description'>生成 10 秒创意故事，把发音、释义与画面一次记住。</p>
+                                <ul className='ai-card-list'>
+                                    <li>自动设计 2-3 个镜头，强调谐音钩子</li>
+                                    <li>结合你的水平与偏好，匹配台词语气</li>
+                                </ul>
+                            </>
+                        )}
 
                         {/* 视频生成状态显示 */}
-                        {isVideoGenerating && (
+                        {/* {isVideoGenerating && (
                             <div className='video-progress'>
                                 <p>{progressMessage || '视频生成中...'}</p>
                             </div>
-                        )}
+                        )} */}
 
                         {/* 视频错误显示 */}
                         {videoError && (
                             <div className='video-error' style={{ color: '#ef4444', marginTop: '12px', fontSize: '14px' }}>
-                                <p>⚠️ {videoError}</p>
+                                <p>视频生成失败</p>
                             </div>
                         )}
 
                         {/* 视频播放器 */}
-                        {videoResult?.videoUrl && (
+                        {(presetVideoUrl || videoResult?.videoUrl) && (
                             <div className='video-player' style={{ marginTop: '16px' }}>
-                                <video controls style={{ width: '100%', borderRadius: '8px' }} src={videoResult.videoUrl}>
+                                <video controls style={{ width: '100%', borderRadius: '8px' }} src={presetVideoUrl || videoResult.videoUrl}>
                                     您的浏览器不支持视频播放。
                                 </video>
                             </div>
                         )}
 
-                        <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={isVideoGenerating}>
-                            {isVideoGenerating ? progressMessage || '创作中…' : videoResult?.videoUrl ? '重新生成' : '生成谐音短片'}
-                        </button>
+                        {/* 如果是预设视频，显示提示信息而不是生成按钮 */}
+                        {presetVideoUrl ? (
+                            <div className='preset-video-info' style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
+                                <p>📹 此单词已预设谐音记忆视频</p>
+                            </div>
+                        ) : (
+                            <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={isVideoGenerating}>
+                                {isVideoGenerating ? progressMessage || '创作中…' : videoResult?.videoUrl ? '重新生成' : '生成谐音短片'}
+                            </button>
+                        )}
                     </article>
                     <article className='ai-card dialogue'>
                         <div className='ai-card-header'>
@@ -348,6 +366,20 @@ const WordDetailPage = () => {
             </div>
 
             <div className='word-detail-card'>{renderContent()}</div>
+
+            {/* 抽屉遮罩层 */}
+            {isChatDrawerOpen && <div className='drawer-overlay' onClick={() => setIsChatDrawerOpen(false)} />}
+
+            {/* 抽屉组件 */}
+            <div className={`chat-drawer ${isChatDrawerOpen ? 'open' : ''}`}>
+                <div className='drawer-header'>
+                    <button className='drawer-close-button' onClick={() => setIsChatDrawerOpen(false)}>
+                        <ArrowLeftIcon />
+                        返回单词详情
+                    </button>
+                </div>
+                <div className='drawer-content'>{detail && <ChatPage word={detail.word} isDrawer={true} />}</div>
+            </div>
         </section>
     );
 };
