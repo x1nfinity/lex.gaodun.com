@@ -11,46 +11,52 @@ import {
 
 const DEFAULT_HOT_WORDS = [
     {
+        word: 'abandon',
+        translation: 'v. 放弃；抛弃',
+        pronunciation: '/əˈbændən/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/81464_20251024150316.mp4',
+    },
+    {
+        word: 'ambulance',
+        translation: 'n. 救护车',
+        pronunciation: '/ˈæmbjələns/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/f081a_20251024150831.mp4',
+    },
+    {
         word: 'charger',
         translation: 'n. 充电器；充电线',
         pronunciation: '/ˈtʃɑːrdʒər/',
-        likes: '12K',
-        practices: '9.3K',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/6ed68_20251024150944.mov',
     },
     {
-        word: 'prototype',
-        translation: 'n. 原型；样机',
-        pronunciation: '/ˈproʊtəˌtaɪp/',
-        likes: '8.4K',
-        practices: '6.1K',
+        word: 'chicken',
+        translation: 'n. 鸡；鸡肉',
+        pronunciation: '/ˈtʃɪkɪn/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/344be_20251024151004.mp4',
     },
     {
-        word: 'landscape',
-        translation: 'n. 风景；地貌',
-        pronunciation: '/ˈlændˌskeɪp/',
-        likes: '9.8K',
-        practices: '7.6K',
+        word: 'crab',
+        translation: 'n. 螃蟹',
+        pronunciation: '/kræb/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/120e8_20251024161150.mp4',
     },
     {
-        word: 'sprint',
-        translation: 'v. 冲刺；加速完成',
-        pronunciation: '/sprɪnt/',
-        likes: '6.7K',
-        practices: '5.2K',
+        word: 'labor',
+        translation: 'n. 劳动；工作',
+        pronunciation: '/ˈleɪbər/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/63a5a_20251024161336.mp4',
     },
     {
-        word: 'spectrum',
-        translation: 'n. 光谱；范围',
-        pronunciation: '/ˈspɛktrəm/',
-        likes: '7.4K',
-        practices: '5.9K',
+        word: 'pest',
+        translation: 'n. 害虫；讨厌的人',
+        pronunciation: '/pest/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/8a022_20251024161326.mp4',
     },
     {
-        word: 'momentum',
-        translation: 'n. 动量；发展势头',
-        pronunciation: '/moʊˈmɛntəm/',
-        likes: '11K',
-        practices: '8.1K',
+        word: 'shrimp',
+        translation: 'n. 虾；小虾',
+        pronunciation: '/ʃrɪmp/',
+        videoUrl: 'https://simg01.gaodunwangxiao.com/uploadfiles/tmp/upload/202510/24/7dd44_20251024161350.mp4',
     },
 ];
 
@@ -58,6 +64,7 @@ const STORAGE_KEYS = {
     hotWords: 'lex.hotwords.v1',
     cache: 'lex.dictionary.cache.v1',
     profile: 'lex.user.profile.v1',
+    dictionaryCache: 'lex.dictionary.api.cache.v1',
 };
 
 const DEFAULT_PROFILE = {
@@ -149,28 +156,10 @@ const describeLearningContexts = values => {
         .join('、');
 };
 
-const buildSceneCues = values => {
-    if (!Array.isArray(values) || values.length === 0) return '';
-    return values
-        .map(value => {
-            const option = getLearningContextByValue(value);
-            if (!option) return '';
-            const [firstExample = ''] = option.examples;
-            return `${option.label}：${firstExample}`;
-        })
-        .filter(Boolean)
-        .join('；');
-};
-
 const DOUBAO_CONFIG = {
     apiKey: 'bd747896-e89b-46f4-a5ab-0a232d086845',
     endpointId: 'ep-20251015101857-wc8xz',
     apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-};
-
-const KLING_CONFIG = {
-    templateUuid: '61cd8b60d340404394f2a545eeaf197a',
-    apiUrl: '/api/generate/video/kling/text2video',
 };
 
 const isBrowser = typeof window !== 'undefined';
@@ -409,8 +398,7 @@ const buildChatSystemPrompt = (word, translation, profile) => {
         ? `对话场景优先围绕：${preferenceLabels}。每轮至少使用一次目标单词或其搭配。`
         : '每轮至少使用一次目标单词或其常见搭配，场景可在日常、职场、旅行间轮换。';
     const safeWord = typeof word === 'string' && word.trim() ? word.trim() : 'unknown';
-    const safeTranslation =
-        typeof translation === 'string' && translation.trim() ? translation.trim() : '暂无释义，请你自行补充';
+    const safeTranslation = typeof translation === 'string' && translation.trim() ? translation.trim() : '暂无释义，请你自行补充';
 
     return `你是豆包智能语言教练，需要围绕英文单词 "${safeWord}" 进行场景化对话练习。
 对话目标：
@@ -432,41 +420,12 @@ ${indentMultiline(preferenceBlock)}
 5. 适时追问或布置小练习，引导学员继续对话。`;
 };
 
-const buildMemoryStoryPrompt = (word, translation, profile) => {
-    const englishLevelValue = normalizeEnglishLevelValue(profile?.englishLevel);
-    const englishLevelLabel = englishLevelValue ? getEnglishLevelByValue(englishLevelValue)?.label ?? englishLevelValue : '未知水平';
-    const preferenceValues = normalizeLearningContexts(profile?.contentPreferences);
-    const sceneFocus = buildSceneCues(preferenceValues) || '日常生活：贴近日常交流的场景';
-    const toneHint = preferenceValues.length > 0 ? `画面应融入 ${describeLearningContexts(preferenceValues)} 相关的生活或职场细节。` : '画面选择贴近日常生活，易于共情。';
-
-    return `你是中文谐音记忆大师兼视频创意导演，需要为英文单词 "${word}"（中文释义：${translation}）生成短视频脚本式提示词，用于驱动文生视频模型。
-
-受众信息：
-- 英语水平：${englishLevelLabel}
-- 偏好场景：${sceneFocus}
-
-创作要求：
-1. 使用贴近中文的谐音桥接，让 "${word}" 的读音自然融入剧情对白或旁白。
-2. ${toneHint}
-3. 故事控制在 2-3 个镜头之内，总时长约 10 秒，节奏紧凑、正向积极。
-4. 每个镜头描述需包含“场景环境”“角色动作”“镜头语言/运镜”“情绪氛围”四个要素。
-5. 在结尾镜头加入一句醒目的中文旁白或字幕，总结单词释义并再次点出谐音钩子。
-
-输出格式（仅限中文文本，不要添加额外解释）：
-- 以 “镜头1：...”“镜头2：...” 的方式顺序描述，每行一个镜头。
-- 最后一行使用 “旁白：...” 给出压轴金句，需自然提及 "${word}" 与其谐音联想。
-`;
-};
-
 const sanitizeChatMessage = message => {
     if (!message || typeof message !== 'object') return null;
     const role = message.role === 'assistant' ? 'assistant' : message.role === 'user' ? 'user' : null;
     if (!role) return null;
     const rawContent = message.content;
-    const content =
-        typeof rawContent === 'string'
-            ? rawContent.trim()
-            : normalizeMessageContent(rawContent);
+    const content = typeof rawContent === 'string' ? rawContent.trim() : normalizeMessageContent(rawContent);
     if (!content) return null;
     return { role, content };
 };
@@ -483,10 +442,12 @@ export const LexProvider = ({ children }) => {
     const [hotWords, setHotWords] = useState(() => safeReadFromStorage(STORAGE_KEYS.hotWords, DEFAULT_HOT_WORDS));
     const [cache, setCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.cache, {}));
     const [profile, setProfile] = useState(() => normalizeProfile(safeReadFromStorage(STORAGE_KEYS.profile, DEFAULT_PROFILE)));
+    const [dictionaryCache, setDictionaryCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.dictionaryCache, {}));
 
     const cacheRef = useRef(cache);
     const profileRef = useRef(profile);
     const pendingRequestsRef = useRef(Object.create(null));
+    const dictionaryCacheRef = useRef(dictionaryCache);
 
     useEffect(() => {
         cacheRef.current = cache;
@@ -494,6 +455,13 @@ export const LexProvider = ({ children }) => {
             window.localStorage.setItem(STORAGE_KEYS.cache, JSON.stringify(cache));
         }
     }, [cache]);
+
+    useEffect(() => {
+        dictionaryCacheRef.current = dictionaryCache;
+        if (isBrowser) {
+            window.localStorage.setItem(STORAGE_KEYS.dictionaryCache, JSON.stringify(dictionaryCache));
+        }
+    }, [dictionaryCache]);
 
     useEffect(() => {
         profileRef.current = profile;
@@ -514,6 +482,56 @@ export const LexProvider = ({ children }) => {
 
     const isProfileComplete = Boolean(profile?.nickname && profile?.englishLevel);
 
+    const validateWord = useCallback(async rawWord => {
+        const normalized = rawWord?.trim().toLowerCase();
+        if (!normalized) {
+            throw new Error('请输入要查询的单词');
+        }
+
+        // 检查缓存
+        const cachedData = dictionaryCacheRef.current[normalized];
+        if (cachedData) {
+            return cachedData;
+        }
+
+        // 调用 Free Dictionary API
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalized)}`);
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || '抱歉，未找到该单词的定义。请检查拼写或稍后再试。');
+            }
+            throw new Error('查询服务暂时不可用，请稍后再试。');
+        }
+
+        const data = await response.json();
+
+        // 提取音频URL
+        const phonetics = data[0]?.phonetics || [];
+        const usPhonetic = phonetics.find(p => p.audio && p.audio.includes('-us')) || phonetics.find(p => p.audio);
+        const ukPhonetic =
+            phonetics.find(p => p.audio && p.audio.includes('-uk')) || phonetics.find(p => p.audio && p.audio !== usPhonetic?.audio);
+
+        const validatedData = {
+            word: data[0]?.word || normalized,
+            phonetics: {
+                us: usPhonetic?.audio || '',
+                uk: ukPhonetic?.audio || '',
+            },
+            rawData: data,
+            validatedAt: Date.now(),
+        };
+
+        // 缓存结果
+        setDictionaryCache(prev => ({
+            ...prev,
+            [normalized]: validatedData,
+        }));
+
+        return validatedData;
+    }, []);
+
     const updateHotWords = useCallback(detail => {
         setHotWords(prevHotWords => {
             const list = Array.isArray(prevHotWords) ? prevHotWords : [];
@@ -521,8 +539,7 @@ export const LexProvider = ({ children }) => {
                 word: detail.word,
                 translation: detail.translation || '暂无释义',
                 pronunciation: detail.phonetic?.us?.text || detail.phonetic?.uk?.text || '',
-                likes: detail.likes ?? '—',
-                practices: detail.practices ?? '—',
+                videoUrl: detail.videoUrl || '',
             };
             const filtered = list.filter(item => item.word.toLowerCase() !== summary.word.toLowerCase());
             return [summary, ...filtered].slice(0, 12);
@@ -570,7 +587,8 @@ export const LexProvider = ({ children }) => {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    const message = data?.error?.message || data?.message || (typeof data === 'string' ? data : '') || '查询失败，请稍后再试';
+                    const message =
+                        data?.error?.message || data?.message || (typeof data === 'string' ? data : '') || '查询失败，请稍后再试';
                     throw new Error(message);
                 }
 
@@ -609,76 +627,6 @@ export const LexProvider = ({ children }) => {
         },
         [updateHotWords]
     );
-
-    const generateMemoryStoryVideo = useCallback(async (word, translation, options = {}) => {
-        // 首先生成谐音记忆故事提示词
-        const storyPrompt = buildMemoryStoryPrompt(word, translation, profileRef.current);
-
-        // 调用豆包API生成故事
-        const storyResponse = await fetch(DOUBAO_CONFIG.apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${DOUBAO_CONFIG.apiKey}`,
-            },
-            body: JSON.stringify({
-                model: DOUBAO_CONFIG.endpointId,
-                messages: [
-                    {
-                        role: 'system',
-                        content: '你是一个创意记忆专家，专门为英语单词创建中文谐音记忆故事。',
-                    },
-                    {
-                        role: 'user',
-                        content: storyPrompt,
-                    },
-                ],
-            }),
-        });
-
-        if (!storyResponse.ok) {
-            const errorData = await storyResponse.json();
-            const message = errorData?.error?.message || errorData?.message || '生成故事失败，请稍后再试';
-            throw new Error(message);
-        }
-
-        const storyData = await storyResponse.json();
-        const storyChoice = storyData?.choices?.[0];
-        if (!storyChoice || !storyChoice.message) {
-            throw new Error('未获取到故事内容');
-        }
-
-        const videoPrompt = normalizeMessageContent(storyChoice.message.content);
-
-        // 调用可灵文生视频API
-        const videoPayload = {
-            templateUuid: KLING_CONFIG.templateUuid,
-            generateParams: {
-                model: options.model || 'kling-v2-1-master',
-                prompt: videoPrompt,
-                aspectRatio: options.aspectRatio || '16:9',
-                duration: options.duration || '5',
-                promptMagic: options.promptMagic !== undefined ? options.promptMagic : 1,
-            },
-        };
-
-        const videoResponse = await fetch(KLING_CONFIG.apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(videoPayload),
-        });
-
-        if (!videoResponse.ok) {
-            const errorData = await videoResponse.json();
-            const message = errorData?.error?.message || errorData?.message || '生成视频失败，请稍后再试';
-            throw new Error(message);
-        }
-
-        const videoData = await videoResponse.json();
-        return videoData;
-    }, []);
 
     const sendWordChatMessage = useCallback(async ({ word, translation, conversation }) => {
         const normalizedWord = typeof word === 'string' ? word.trim() : '';
@@ -736,13 +684,13 @@ export const LexProvider = ({ children }) => {
         () => ({
             hotWords,
             fetchWordDetail,
+            validateWord,
             userProfile: profile,
             isProfileComplete,
             saveUserProfile,
-            generateMemoryStoryVideo,
             sendWordChatMessage,
         }),
-        [hotWords, fetchWordDetail, profile, isProfileComplete, saveUserProfile, generateMemoryStoryVideo, sendWordChatMessage]
+        [hotWords, fetchWordDetail, validateWord, profile, isProfileComplete, saveUserProfile, sendWordChatMessage]
     );
 
     return <LexContext.Provider value={value}>{children}</LexContext.Provider>;

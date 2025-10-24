@@ -5,9 +5,10 @@ import { getEnglishLevelByValue, getLearningContextByValue } from '../data/profi
 import { HeartIcon, SearchIcon, SoundIcon } from '../components/icons.jsx';
 
 const HomePage = () => {
-    const { hotWords, userProfile } = useLexContext();
+    const { hotWords, userProfile, validateWord } = useLexContext();
     const [query, setQuery] = useState('');
     const [error, setError] = useState('');
+    const [isValidating, setIsValidating] = useState(false);
     const navigate = useNavigate();
     const nickname = userProfile?.nickname || '学习者';
     const englishLevelValue = userProfile?.englishLevel || '';
@@ -43,9 +44,29 @@ const HomePage = () => {
         navigate(`/word/${encodeURIComponent(normalized.toLowerCase())}`);
     };
 
-    const handleSubmit = event => {
+    const handleSubmit = async event => {
         event.preventDefault();
-        handleNavigate(query);
+        const normalized = query?.trim();
+        if (!normalized) {
+            setError('请输入要查询的单词');
+            return;
+        }
+
+        setError('');
+        setIsValidating(true);
+
+        try {
+            // 先验证单词是否存在
+            await validateWord(normalized);
+            // 验证通过，跳转到详情页
+            navigate(`/word/${encodeURIComponent(normalized.toLowerCase())}`);
+        } catch (err) {
+            console.log(err);
+            // 显示现代感的错误提示
+            setError(`对不起，${nickname}，我们找不到你要找的那个词的定义`);
+        } finally {
+            setIsValidating(false);
+        }
     };
 
     return (
@@ -67,12 +88,17 @@ const HomePage = () => {
                         value={query}
                         onChange={event => setQuery(event.target.value)}
                         autoComplete='off'
+                        disabled={isValidating}
                     />
-                    <button className='search-action' type='submit'>
-                        开始探索
+                    <button className='search-action' type='submit' disabled={isValidating}>
+                        {isValidating ? '探索中...' : '开始探索'}
                     </button>
                 </form>
-                {error && <p className='search-hint'>{error}</p>}
+                {error && (
+                    <p className='search-hint' style={{ color: '#ef4444', fontWeight: '500' }}>
+                        {error}
+                    </p>
+                )}
             </section>
 
             <section className='daily-words'>
@@ -106,11 +132,11 @@ const HomePage = () => {
                                     <SoundIcon />
                                     <span>{item.pronunciation || '暂无音标'}</span>
                                 </div>
-                                <div className='word-meta-item'>
+                                {/* <div className='word-meta-item'>
                                     <HeartIcon />
                                     <span>{item.likes ?? '—'}</span>
-                                </div>
-                                <div className='word-meta-item'>
+                                </div> */}
+                                {/* <div className='word-meta-item'>
                                     <svg
                                         width='18'
                                         height='18'
@@ -129,7 +155,7 @@ const HomePage = () => {
                                         <circle cx='12' cy='12' r='9' stroke='currentColor' strokeWidth='1.5' />
                                     </svg>
                                     <span>{item.practices ?? '—'}</span>
-                                </div>
+                                </div> */}
                             </div>
                         </article>
                     ))}

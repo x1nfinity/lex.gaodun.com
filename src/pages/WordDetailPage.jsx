@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, SoundIcon, SparkleIcon } from '../components/icons.jsx';
 import { useLexContext } from '../context/LexContext.jsx';
+import { useText2Video } from '../text2video/lib.ts';
 
 const LOADING_HINTS = [
     { label: '正在连接权威词库与发音资源...', delay: 0 },
@@ -17,8 +18,17 @@ const LoadingSkeleton = ({ word, phase }) => {
                 <div className='loading-word'>
                     <span className='loading-chip'>AI 正在准备</span>
                     <h1 className='loading-title'>{displayWord}</h1>
+                    <div className='loading-steps' role='status'>
+                        {LOADING_HINTS.map((hint, index) => (
+                            <div key={hint.label} className={`loading-step ${index <= phase ? 'active' : ''}`}>
+                                <span className='loading-dot' />
+                                <span>{hint.label}</span>
+                            </div>
+                        ))}
+                    </div>
                     <div className='skeleton-block skeleton-md' />
                 </div>
+
                 <div className='loading-meta'>
                     {Array.from({ length: 3 }).map((_, index) => (
                         <div key={`meta-${index}`} className='skeleton-block skeleton-pill' />
@@ -44,14 +54,14 @@ const LoadingSkeleton = ({ word, phase }) => {
                 </div>
             </div>
 
-            <div className='loading-steps' role='status'>
+            {/* <div className='loading-steps' role='status'>
                 {LOADING_HINTS.map((hint, index) => (
                     <div key={hint.label} className={`loading-step ${index <= phase ? 'active' : ''}`}>
                         <span className='loading-dot' />
                         <span>{hint.label}</span>
                     </div>
                 ))}
-            </div>
+            </div> */}
         </div>
     );
 };
@@ -59,14 +69,15 @@ const LoadingSkeleton = ({ word, phase }) => {
 const WordDetailPage = () => {
     const { word } = useParams();
     const navigate = useNavigate();
-    const { fetchWordDetail, generateMemoryStoryVideo } = useLexContext();
+    const { fetchWordDetail } = useLexContext();
     const [status, setStatus] = useState('loading');
     const [detail, setDetail] = useState(null);
     const [error, setError] = useState('');
-    const [videoStatus, setVideoStatus] = useState('idle'); // idle, loading, success, error
-    const [videoResult, setVideoResult] = useState(null);
-    const [videoError, setVideoError] = useState('');
     const [loadingPhase, setLoadingPhase] = useState(0);
+    const [dictionaryAudio, setDictionaryAudio] = useState({ us: null, uk: null });
+
+    // 使用 text2video hook
+    const { isLoading: isVideoGenerating, progressMessage, error: videoError, result: videoResult, generateVideo } = useText2Video();
 
     useEffect(() => {
         let cancelled = false;
@@ -75,6 +86,27 @@ const WordDetailPage = () => {
             if (!word) return;
             setStatus('loading');
             setError('');
+
+            // 从localStorage读取缓存的音频数据
+            try {
+                const cacheKey = 'lex.dictionary.api.cache.v1';
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const parsedCache = JSON.parse(cached);
+                    const normalizedWord = word.trim().toLowerCase();
+                    const wordCache = parsedCache[normalizedWord];
+                    if (wordCache?.phonetics) {
+                        console.log(wordCache?.phonetics, 'wordCache?.phonetics');
+                        setDictionaryAudio({
+                            us: wordCache.phonetics.us || null,
+                            uk: wordCache.phonetics.uk || null,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn('读取音频缓存失败', err);
+            }
+
             try {
                 const result = await fetchWordDetail(word);
                 if (!cancelled) {
@@ -95,7 +127,7 @@ const WordDetailPage = () => {
             cancelled = true;
         };
     }, [word, fetchWordDetail]);
-
+    console.log(dictionaryAudio, 'dictionaryAudio');
     useEffect(() => {
         if (status !== 'loading') {
             setLoadingPhase(0);
@@ -128,24 +160,11 @@ const WordDetailPage = () => {
     };
 
     const handleGenerateVideo = async () => {
-        if (!detail || videoStatus === 'loading') return;
-
-        setVideoStatus('loading');
-        setVideoError('');
-
+        if (!detail?.word) return;
         try {
-            const result = await generateMemoryStoryVideo(detail.word, detail.translation, {
-                model: 'kling-v2-1-master',
-                aspectRatio: '16:9',
-                duration: '5',
-                promptMagic: 1,
-            });
-
-            setVideoResult(result);
-            setVideoStatus('success');
+            await generateVideo(detail.word);
         } catch (err) {
-            setVideoError(err instanceof Error ? err.message : '生成视频失败，请稍后再试');
-            setVideoStatus('error');
+            console.error('视频生成失败:', err);
         }
     };
 
@@ -178,18 +197,18 @@ const WordDetailPage = () => {
                         <button
                             className='tone-tag'
                             type='button'
-                            onClick={() => handlePlayAudio(detail.phonetic?.us?.audio)}
-                            disabled={!detail.phonetic?.us?.audio}
-                            aria-label={detail.phonetic?.us?.audio ? '播放美式发音' : '暂无美式音频'}
+                            onClick={() => handlePlayAudio(dictionaryAudio.us || detail.phonetic?.us?.audio)}
+                            disabled={!dictionaryAudio.us && !detail.phonetic?.us?.audio}
+                            aria-label={dictionaryAudio.us || detail.phonetic?.us?.audio ? '播放美式发音' : '暂无美式音频'}
                         >
                             <SoundIcon />美 {detail.phonetic?.us?.text}
                         </button>
                         <button
                             className='tone-tag'
                             type='button'
-                            onClick={() => handlePlayAudio(detail.phonetic?.uk?.audio)}
-                            disabled={!detail.phonetic?.uk?.audio}
-                            aria-label={detail.phonetic?.uk?.audio ? '播放英式发音' : '暂无英式音频'}
+                            onClick={() => handlePlayAudio(dictionaryAudio.uk || detail.phonetic?.uk?.audio)}
+                            disabled={!dictionaryAudio.uk && !detail.phonetic?.uk?.audio}
+                            aria-label={dictionaryAudio.uk || detail.phonetic?.uk?.audio ? '播放英式发音' : '暂无英式音频'}
                         >
                             <SoundIcon />英 {detail.phonetic?.uk?.text}
                         </button>
@@ -263,8 +282,32 @@ const WordDetailPage = () => {
                             <li>自动设计 2-3 个镜头，强调谐音钩子</li>
                             <li>结合你的水平与偏好，匹配台词语气</li>
                         </ul>
-                        <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={videoStatus === 'loading'}>
-                            {videoStatus === 'loading' ? '创作中…' : '生成谐音短片'}
+
+                        {/* 视频生成状态显示 */}
+                        {isVideoGenerating && (
+                            <div className='video-progress'>
+                                <p>{progressMessage || '视频生成中...'}</p>
+                            </div>
+                        )}
+
+                        {/* 视频错误显示 */}
+                        {videoError && (
+                            <div className='video-error' style={{ color: '#ef4444', marginTop: '12px', fontSize: '14px' }}>
+                                <p>⚠️ {videoError}</p>
+                            </div>
+                        )}
+
+                        {/* 视频播放器 */}
+                        {videoResult?.videoUrl && (
+                            <div className='video-player' style={{ marginTop: '16px' }}>
+                                <video controls style={{ width: '100%', borderRadius: '8px' }} src={videoResult.videoUrl}>
+                                    您的浏览器不支持视频播放。
+                                </video>
+                            </div>
+                        )}
+
+                        <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={isVideoGenerating}>
+                            {isVideoGenerating ? progressMessage || '创作中…' : videoResult?.videoUrl ? '重新生成' : '生成谐音短片'}
                         </button>
                     </article>
                     <article className='ai-card dialogue'>
@@ -287,31 +330,6 @@ const WordDetailPage = () => {
                         </button>
                     </article>
                 </div>
-
-                {/* 视频生成结果展示 */}
-                {videoStatus === 'loading' && (
-                    <div className='video-result loading'>
-                        <p>AI 正在编写谐音剧情并渲染短视频，大约需要 10-15 秒完成。</p>
-                        <p className='video-note'>我们完成后会自动推送至后台任务列表，你可稍后回来查看成品。</p>
-                    </div>
-                )}
-
-                {videoStatus === 'error' && (
-                    <div className='video-result error'>
-                        <p>生成失败：{videoError}</p>
-                        <button className='retry-button' type='button' onClick={handleGenerateVideo}>
-                            重试
-                        </button>
-                    </div>
-                )}
-
-                {videoStatus === 'success' && videoResult && (
-                    <div className='video-result success'>
-                        <h3>视频生成成功</h3>
-                        <p>任务ID：{videoResult.generateUuid}</p>
-                        <p className='video-note'>视频正在后台生成中，请稍后查看结果</p>
-                    </div>
-                )}
             </>
         );
     };
