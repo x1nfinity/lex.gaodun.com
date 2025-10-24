@@ -103,6 +103,69 @@
     cursor: not-allowed;
 }
 
+.onboarding-option.rich-card {
+    flex: 1 1 calc(50% - 12px);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 240px;
+}
+
+.onboarding-option.rich-card .option-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.onboarding-option.rich-card .option-description {
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.onboarding-option.rich-card .option-examples {
+    margin: 0;
+    padding-left: 18px;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.onboarding-option.rich-card .option-examples li {
+    list-style: disc;
+}
+
+.onboarding-option.compact {
+    min-width: 180px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.onboarding-option .option-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.onboarding-option .option-hint,
+.onboarding-option .option-description,
+.onboarding-option .option-examples {
+    color: #4b5563;
+}
+
+.onboarding-option .option-hint {
+    font-size: 12px;
+}
+
+.onboarding-option.selected .option-description,
+.onboarding-option.selected .option-examples,
+.onboarding-option.selected .option-hint {
+    color: rgba(255, 255, 255, 0.85);
+}
+
 .onboarding-error {
     margin: -8px 0 0;
     font-size: 14px;
@@ -189,6 +252,10 @@
     .onboarding-card {
         padding: 32px 24px;
         border-radius: 24px;
+    }
+
+    .onboarding-option.rich-card {
+        flex-basis: 100%;
     }
 
     .onboarding-actions {

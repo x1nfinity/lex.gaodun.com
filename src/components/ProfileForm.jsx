@@ -1,14 +1,51 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+    ENGLISH_LEVEL_OPTIONS,
+    LEARNING_CONTEXT_OPTIONS,
+    MAX_CONTEXT_SELECTIONS,
+    getEnglishLevelByValue,
+    getLearningContextByValue,
+} from '../data/profileFormOptions.js';
 import './ProfileForm.css';
-
-const ENGLISH_LEVEL_OPTIONS = ['小白', '过了4级', '过了6级', '雅思7+', '初高中'];
-
-const CONTENT_PREFERENCE_OPTIONS = ['商务会议', '日常生活', '职场沟通', '学术写作', '出国旅行', '兴趣社交'];
 
 const DEFAULT_PROFILE = {
     nickname: '',
     englishLevel: '',
     contentPreferences: [],
+};
+
+const resolveEnglishLevelValue = value => {
+    if (typeof value !== 'string') return '';
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    const match = getEnglishLevelByValue(trimmed) || ENGLISH_LEVEL_OPTIONS.find(item => item.label === trimmed);
+    return match ? match.value : trimmed;
+};
+
+const resolvePreferenceValue = value => {
+    if (typeof value !== 'string') return '';
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    const match = getLearningContextByValue(trimmed) || LEARNING_CONTEXT_OPTIONS.find(item => item.label === trimmed);
+    return match ? match.value : trimmed;
+};
+
+const normalizePreferences = (list, limit) => {
+    if (!Array.isArray(list)) return [];
+    const normalized = Array.from(
+        new Set(
+            list
+                .map(resolvePreferenceValue)
+                .filter(Boolean),
+        ),
+    );
+    if (limit === 1) {
+        return normalized.length > 0 ? [normalized[0]] : [];
+    }
+    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+        return normalized.slice(0, limit);
+    }
+    return normalized;
 };
 
 const ProfileForm = ({
@@ -22,31 +59,36 @@ const ProfileForm = ({
     onSubmit,
     onCancel,
     onReset,
-    maxPreferences = 4,
+    maxPreferences = MAX_CONTEXT_SELECTIONS,
     isSubmitting = false,
 }) => {
     const [nickname, setNickname] = useState(initialProfile.nickname || '');
-    const [englishLevel, setEnglishLevel] = useState(initialProfile.englishLevel || '');
-    const [preferences, setPreferences] = useState(() => [...(initialProfile.contentPreferences ?? [])]);
+    const [englishLevel, setEnglishLevel] = useState(resolveEnglishLevelValue(initialProfile.englishLevel));
+    const [preferences, setPreferences] = useState(() =>
+        normalizePreferences(initialProfile.contentPreferences, maxPreferences),
+    );
     const [error, setError] = useState('');
     const [pending, setPending] = useState(false);
 
     useEffect(() => {
         setNickname(initialProfile.nickname || '');
-        setEnglishLevel(initialProfile.englishLevel || '');
-        setPreferences(Array.isArray(initialProfile.contentPreferences) ? [...initialProfile.contentPreferences] : []);
-    }, [initialProfile]);
+        setEnglishLevel(resolveEnglishLevelValue(initialProfile.englishLevel));
+        setPreferences(normalizePreferences(initialProfile.contentPreferences, maxPreferences));
+    }, [initialProfile, maxPreferences]);
 
     const isFormValid = useMemo(() => Boolean(nickname.trim() && englishLevel.trim()), [englishLevel, nickname]);
     const isSaving = isSubmitting || pending;
 
     const togglePreference = value => {
         setPreferences(prev => {
+            if (maxPreferences === 1) {
+                return prev.includes(value) ? [] : [value];
+            }
             const list = Array.isArray(prev) ? prev : [];
             if (list.includes(value)) {
                 return list.filter(item => item !== value);
             }
-            if (list.length >= maxPreferences) {
+            if (typeof maxPreferences === 'number' && maxPreferences > 0 && list.length >= maxPreferences) {
                 return list;
             }
             return [...list, value];
@@ -133,13 +175,19 @@ const ProfileForm = ({
                 <div className='onboarding-options'>
                     {ENGLISH_LEVEL_OPTIONS.map(option => (
                         <button
-                            key={option}
+                            key={option.value}
                             type='button'
-                            className={`onboarding-option ${englishLevel === option ? 'selected' : ''}`}
-                            onClick={() => setEnglishLevel(option)}
+                            className={`onboarding-option rich-card ${englishLevel === option.value ? 'selected' : ''}`}
+                            onClick={() => setEnglishLevel(option.value)}
                             disabled={isSaving}
                         >
-                            {option}
+                            <span className='option-title'>{option.label}</span>
+                            <span className='option-description'>{option.description}</span>
+                            <ul className='option-examples'>
+                                {option.examples.map(example => (
+                                    <li key={example}>{example}</li>
+                                ))}
+                            </ul>
                         </button>
                     ))}
                 </div>
@@ -148,21 +196,27 @@ const ProfileForm = ({
             <div className='onboarding-field'>
                 <span className='onboarding-label'>
                     内容偏好
-                    <small>（最多选择 {maxPreferences} 项，可选）</small>
+                    {maxPreferences === 1 ? <small>（可选，单选）</small> : <small>（最多选择 {maxPreferences} 项，可选）</small>}
                 </span>
                 <div className='onboarding-options'>
-                    {CONTENT_PREFERENCE_OPTIONS.map(option => {
-                        const selected = preferences.includes(option);
-                        const disabled = !selected && preferences.length >= maxPreferences;
+                    {LEARNING_CONTEXT_OPTIONS.map(option => {
+                        const selected = preferences.includes(option.value);
+                        const disabled =
+                            maxPreferences !== 1 &&
+                            !selected &&
+                            typeof maxPreferences === 'number' &&
+                            maxPreferences > 0 &&
+                            preferences.length >= maxPreferences;
                         return (
                             <button
-                                key={option}
+                                key={option.value}
                                 type='button'
-                                className={`onboarding-option ${selected ? 'selected' : ''}`}
-                                onClick={() => togglePreference(option)}
+                                className={`onboarding-option compact ${selected ? 'selected' : ''}`}
+                                onClick={() => togglePreference(option.value)}
                                 disabled={isSaving || disabled}
                             >
-                                {option}
+                                <span className='option-title'>{option.label}</span>
+                                <span className='option-hint'>{option.examples[0]}</span>
                             </button>
                         );
                     })}

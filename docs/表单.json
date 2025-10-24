@@ -1,0 +1,86 @@
+{
+    "user_info_form": {
+        "title": "个性化英语学习推荐",
+        "description": "请选择您的英语水平和学习场景，我们将为您定制专属学习内容。",
+        "fields": [
+            {
+                "field": "english_level",
+                "label": "您的英语水平",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "初级 (Beginner)",
+                        "value": "A1-A2",
+                        "description": "能理解简单单词和短语，适合日常基础交流。",
+                        "examples": ["认识常见单词，如 family, food, work", "能进行简单问候，如 'How are you?' 'Nice to meet you.'"]
+                    },
+                    {
+                        "label": "中级 (Intermediate)",
+                        "value": "B1-B2",
+                        "description": "能理解常见话题，能在工作或学习中使用英语。",
+                        "examples": ["能描述经历、兴趣或未来计划", "能应对会议、邮件或日常社交对话"]
+                    },
+                    {
+                        "label": "高级 (Advanced)",
+                        "value": "C1",
+                        "description": "能流利表达复杂想法，理解高难度内容。",
+                        "examples": ["能理解学术讲座或商务报告", "能清晰表达观点并讨论抽象主题"]
+                    },
+                    {
+                        "label": "精通 (Proficient)",
+                        "value": "C2",
+                        "description": "接近母语水平，能在各种场景下自然使用英语。",
+                        "examples": ["能阅读专业文献并准确使用词汇", "能进行文化、哲学等深度交流"]
+                    }
+                ]
+            },
+            {
+                "field": "learning_context",
+                "label": "您最感兴趣的学习场景",
+                "type": "checkbox",
+                "options": [
+                    {
+                        "label": "日常生活英语",
+                        "value": "Daily Life English",
+                        "examples": ["超市购物、点餐、打招呼", "看电影、与朋友闲聊"]
+                    },
+                    {
+                        "label": "职场英语",
+                        "value": "Business English",
+                        "examples": ["商务会议表达、写英文邮件", "面试沟通、项目汇报"]
+                    },
+                    {
+                        "label": "出国旅游",
+                        "value": "Travel English",
+                        "examples": ["订酒店、问路、机场沟通", "餐厅点餐、购物退税"]
+                    },
+                    {
+                        "label": "学术英语",
+                        "value": "Academic English",
+                        "examples": ["撰写论文、学术演讲", "阅读英文研究资料"]
+                    },
+                    {
+                        "label": "考试准备",
+                        "value": "Exam Preparation",
+                        "examples": ["托福、雅思、CET、GRE 词汇与写作训练", "模拟听力与口语考试"]
+                    },
+                    {
+                        "label": "留学 / 移民",
+                        "value": "Study Abroad / Immigration",
+                        "examples": ["签证面试、文化适应、课堂表达", "日常沟通与学术交流"]
+                    },
+                    {
+                        "label": "兴趣学习（影视、音乐等）",
+                        "value": "Hobby / Pop Culture",
+                        "examples": ["电影对白学习、歌词解析", "娱乐节目听力与表达模仿"]
+                    },
+                    {
+                        "label": "口语练习",
+                        "value": "Speaking Practice",
+                        "examples": ["AI 对话练习、语音纠错", "模拟真实交流场景"]
+                    }
+                ]
+            }
+        ]
+    }
+}

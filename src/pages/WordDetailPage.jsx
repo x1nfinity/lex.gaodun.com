@@ -6,10 +6,13 @@ import { useLexContext } from '../context/LexContext.jsx';
 const WordDetailPage = () => {
     const { word } = useParams();
     const navigate = useNavigate();
-    const { fetchWordDetail } = useLexContext();
+    const { fetchWordDetail, generateMemoryStoryVideo } = useLexContext();
     const [status, setStatus] = useState('loading');
     const [detail, setDetail] = useState(null);
     const [error, setError] = useState('');
+    const [videoStatus, setVideoStatus] = useState('idle'); // idle, loading, success, error
+    const [videoResult, setVideoResult] = useState(null);
+    const [videoError, setVideoError] = useState('');
 
     useEffect(() => {
         let cancelled = false;
@@ -51,6 +54,34 @@ const WordDetailPage = () => {
         audio.play().catch(err => {
             console.warn('音频播放失败', err);
         });
+    };
+
+    const handleGenerateVideo = async () => {
+        if (!detail || videoStatus === 'loading') return;
+
+        setVideoStatus('loading');
+        setVideoError('');
+
+        try {
+            const result = await generateMemoryStoryVideo(detail.word, detail.translation, {
+                model: 'kling-v2-1-master',
+                aspectRatio: '16:9',
+                duration: '5',
+                promptMagic: 1,
+            });
+
+            setVideoResult(result);
+            setVideoStatus('success');
+        } catch (err) {
+            setVideoError(err instanceof Error ? err.message : '生成视频失败，请稍后再试');
+            setVideoStatus('error');
+        }
+    };
+
+    const handleStartChat = () => {
+        if (!detail) return;
+        // 导航到对话页面，并传递单词信息
+        navigate(`/chat/${detail.word}`);
     };
 
     const renderContent = () => {
@@ -153,8 +184,8 @@ const WordDetailPage = () => {
                             <h3>谐音记忆法</h3>
                             <p>AI 帮你生成趣味故事，让发音和释义一听就懂。</p>
                         </div>
-                        <button className='ai-action' type='button'>
-                            立即生成
+                        <button className='ai-action' type='button' onClick={handleGenerateVideo} disabled={videoStatus === 'loading'}>
+                            {videoStatus === 'loading' ? '生成中...' : '立即生成'}
                         </button>
                     </article>
                     <article className='ai-card dialogue'>
@@ -162,11 +193,35 @@ const WordDetailPage = () => {
                             <h3>AI 场景对话</h3>
                             <p>模拟真实交流环境，迅速掌握单词在对话中的运用。</p>
                         </div>
-                        <button className='ai-action' type='button'>
+                        <button className='ai-action' type='button' onClick={handleStartChat}>
                             去实战
                         </button>
                     </article>
                 </div>
+
+                {/* 视频生成结果展示 */}
+                {videoStatus === 'loading' && (
+                    <div className='video-result loading'>
+                        <p>正在生成谐音记忆视频，请稍候...</p>
+                    </div>
+                )}
+
+                {videoStatus === 'error' && (
+                    <div className='video-result error'>
+                        <p>生成失败：{videoError}</p>
+                        <button className='retry-button' type='button' onClick={handleGenerateVideo}>
+                            重试
+                        </button>
+                    </div>
+                )}
+
+                {videoStatus === 'success' && videoResult && (
+                    <div className='video-result success'>
+                        <h3>视频生成成功</h3>
+                        <p>任务ID：{videoResult.generateUuid}</p>
+                        <p className='video-note'>视频正在后台生成中，请稍后查看结果</p>
+                    </div>
+                )}
             </>
         );
     };

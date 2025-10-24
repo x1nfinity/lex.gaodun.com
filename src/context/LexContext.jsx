@@ -1,4 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ENGLISH_LEVEL_OPTIONS,
+    LEARNING_CONTEXT_OPTIONS,
+    MAX_CONTEXT_SELECTIONS,
+    getEnglishLevelByValue,
+    getLearningContextByValue,
+    mapLegacyContextValues,
+    mapLegacyEnglishLevel,
+} from '../data/profileFormOptions.js';
 
 const DEFAULT_HOT_WORDS = [
     {
@@ -57,10 +66,111 @@ const DEFAULT_PROFILE = {
     contentPreferences: [],
 };
 
+const normalizeEnglishLevelValue = raw => {
+    if (!raw) return '';
+    if (typeof raw === 'string') {
+        const mapped = mapLegacyEnglishLevel(raw);
+        const normalized = getEnglishLevelByValue(mapped) || ENGLISH_LEVEL_OPTIONS.find(item => item.label === mapped);
+        return normalized ? normalized.value : mapped.trim();
+    }
+    if (typeof raw === 'object') {
+        if (raw === null) return '';
+        if (typeof raw.value === 'string') {
+            return normalizeEnglishLevelValue(raw.value);
+        }
+        if (typeof raw.label === 'string') {
+            return normalizeEnglishLevelValue(raw.label);
+        }
+    }
+    return '';
+};
+
+const normalizeLearningContexts = rawList => {
+    if (!rawList) return [];
+    if (Array.isArray(rawList)) {
+        const normalized = mapLegacyContextValues(rawList)
+            .map(item => {
+                const option = getLearningContextByValue(item) || LEARNING_CONTEXT_OPTIONS.find(ctx => ctx.label === item);
+                return option ? option.value : '';
+            })
+            .filter(Boolean);
+        return normalized.slice(0, MAX_CONTEXT_SELECTIONS);
+    }
+    if (typeof rawList === 'object') {
+        const { values } = rawList;
+        if (Array.isArray(values)) {
+            return normalizeLearningContexts(values);
+        }
+    }
+    if (typeof rawList === 'string') {
+        return normalizeLearningContexts(rawList.split(/[、,]/));
+    }
+    return [];
+};
+
+const formatEnglishLevelForPrompt = value => {
+    const option = getEnglishLevelByValue(value);
+    if (!option) {
+        return value ? `${value}（未匹配到预设等级，按自定义水平处理）` : '未提供';
+    }
+    const exampleHint = option.examples.join('；');
+    return `${option.label}（CEFR ${option.value}）
+- 能力标签：${option.description}
+- 学习示例：${exampleHint}`;
+};
+
+const formatLearningContextsForPrompt = values => {
+    if (!Array.isArray(values) || values.length === 0) {
+        return '未提供';
+    }
+    return values
+        .map(value => {
+            const option = getLearningContextByValue(value);
+            if (!option) return `其他：${value}`;
+            const exampleHint = option.examples.join('；');
+            return `- ${option.label}（关注：${exampleHint}）`;
+        })
+        .join('\n');
+};
+
+const indentMultiline = (text, indent = '  ') =>
+    String(text || '')
+        .split('\n')
+        .map(line => `${indent}${line}`)
+        .join('\n');
+
+const describeLearningContexts = values => {
+    if (!Array.isArray(values) || values.length === 0) return '';
+    return values
+        .map(value => {
+            const option = getLearningContextByValue(value);
+            return option ? option.label : value;
+        })
+        .join('、');
+};
+
+const buildSceneCues = values => {
+    if (!Array.isArray(values) || values.length === 0) return '';
+    return values
+        .map(value => {
+            const option = getLearningContextByValue(value);
+            if (!option) return '';
+            const [firstExample = ''] = option.examples;
+            return `${option.label}：${firstExample}`;
+        })
+        .filter(Boolean)
+        .join('；');
+};
+
 const DOUBAO_CONFIG = {
     apiKey: 'bd747896-e89b-46f4-a5ab-0a232d086845',
     endpointId: 'ep-20251015101857-wc8xz',
     apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+};
+
+const KLING_CONFIG = {
+    templateUuid: '61cd8b60d340404394f2a545eeaf197a',
+    apiUrl: '/api/generate/video/kling/text2video',
 };
 
 const isBrowser = typeof window !== 'undefined';
@@ -164,10 +274,8 @@ const normalizeProfile = raw => {
     }
 
     const nickname = typeof raw.nickname === 'string' && raw.nickname.trim() ? raw.nickname.trim() : '';
-    const englishLevel = typeof raw.englishLevel === 'string' && raw.englishLevel.trim() ? raw.englishLevel.trim() : '';
-    const contentPreferences = Array.isArray(raw.contentPreferences)
-        ? Array.from(new Set(raw.contentPreferences.map(item => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)))
-        : [];
+    const englishLevel = normalizeEnglishLevelValue(raw.englishLevel);
+    const contentPreferences = normalizeLearningContexts(raw.contentPreferences);
 
     return {
         nickname,
@@ -248,30 +356,125 @@ const normalizeDoubaoDetail = (rawDetail, fallbackWord) => {
 
 const buildDoubaoPrompt = (word, profile) => {
     const nickname = typeof profile?.nickname === 'string' && profile.nickname.trim() ? profile.nickname.trim() : '学习者';
-    const englishLevel =
-        typeof profile?.englishLevel === 'string' && profile.englishLevel.trim() ? profile.englishLevel.trim() : '未知水平';
-    const contentPreferences =
-        Array.isArray(profile?.contentPreferences) && profile.contentPreferences.length > 0
-            ? profile.contentPreferences.join('、')
-            : '未提供';
+    const englishLevelValue = normalizeEnglishLevelValue(profile?.englishLevel);
+    const englishLevelBlock = formatEnglishLevelForPrompt(englishLevelValue);
+    const preferenceValues = normalizeLearningContexts(profile?.contentPreferences);
+    const preferenceBlock = formatLearningContextsForPrompt(preferenceValues);
+    const preferenceLabels = describeLearningContexts(preferenceValues);
+    const difficultyHint = englishLevelValue
+        ? `例句语法与词汇需符合 ${getEnglishLevelByValue(englishLevelValue)?.label ?? englishLevelValue} 的理解范围，必要时提供简明中文解释。`
+        : '例句语法与词汇保持中等难度，必要时提供简明中文解释。';
+    const contextHint = preferenceLabels
+        ? `例句应优先覆盖以下场景：${preferenceLabels}，并展示单词的不同词性或搭配用法。`
+        : '例句需覆盖不同词性和常见搭配，体现多元语境。';
 
     return `请扮演英文词典专家，为英文单词 "${word}" 提供精确的中文词典词条。
 用户画像：
 - 昵称：${nickname}
-- 英语水平：${englishLevel}
-- 内容偏好：${contentPreferences}
-请根据用户英语水平控制释义与例句难度，并在例句中优先选用符合用户偏好的情境。
+- 英语水平：
+${indentMultiline(englishLevelBlock)}
+- 学习场景优先级：
+${indentMultiline(preferenceBlock)}
+
+写作准则：
+1. ${difficultyHint}
+2. ${contextHint}
+3. 释义需条理清晰，突出中文关键词，可适度补充英文同义表达。
+4. 输出必须为合法 JSON 字符串，字段齐全，不附加额外解释或 Markdown。
+
 你必须仅返回一个 JSON 对象，不得包含多余文本或说明。
 JSON 需要包含以下字段：
 - word: 单词原文
 - translation: 最常用的中文释义，简洁明了
 - phonetic: 包含 us 和 uk 两个子字段，每个字段包含 text（音标）和 audio（若无则留空字符串）
 - partOfSpeech: 主要词性
-- frequency: 以中文描述单词使用频率（如“较常用”），若无数据返回为空白字符串
+- frequency: 以中文描述单词使用频率（如"较常用"），若无数据返回为空白字符串
 - inflections: 常见词形变化，无数据写返回空白字符串
-- meanings: 数组，每项为 { "title": "词性或标签", "description": "中文释义" }，按重要性排序，至多 6 条
-- examples: 数组，每项为 { "en": "英文例句", "zh": "对应中文翻译" }，提供 2-4 条，与用户水平相符并贴合其偏好情境
+- meanings: 数组，每项为 { "title": "词性或标签", "description": "中文释义" }，按重要性排序，以词性（v. n. adj.）为维度, 列出3-6个最常用的中文/英文释义。
+- examples: 数组，每项为 { "en": "英文例句", "zh": "对应中文翻译" }，提供 3-5 条，与用户水平相符并贴合其偏好情境， 例句应覆盖单词的不同词性、不同常用搭配和不同语境，避免同质化。
 - phrases: 数组，列出 3-6 个常见搭配或近义短语，中文或英文均可`;
+};
+
+const buildChatSystemPrompt = (word, translation, profile) => {
+    const nickname = typeof profile?.nickname === 'string' && profile.nickname.trim() ? profile.nickname.trim() : '学习者';
+    const englishLevelValue = normalizeEnglishLevelValue(profile?.englishLevel);
+    const englishLevelBlock = formatEnglishLevelForPrompt(englishLevelValue);
+    const preferenceValues = normalizeLearningContexts(profile?.contentPreferences);
+    const preferenceBlock = formatLearningContextsForPrompt(preferenceValues);
+    const preferenceLabels = describeLearningContexts(preferenceValues);
+    const toneHint = englishLevelValue
+        ? `语言难度需对标 ${getEnglishLevelByValue(englishLevelValue)?.label ?? englishLevelValue} 学习者，遇到生词可提供中文解释。`
+        : '语言难度保持中等，遇到生词可提供中文解释。';
+    const sceneHint = preferenceLabels
+        ? `对话场景优先围绕：${preferenceLabels}。每轮至少使用一次目标单词或其搭配。`
+        : '每轮至少使用一次目标单词或其常见搭配，场景可在日常、职场、旅行间轮换。';
+    const safeWord = typeof word === 'string' && word.trim() ? word.trim() : 'unknown';
+    const safeTranslation =
+        typeof translation === 'string' && translation.trim() ? translation.trim() : '暂无释义，请你自行补充';
+
+    return `你是豆包智能语言教练，需要围绕英文单词 "${safeWord}" 进行场景化对话练习。
+对话目标：
+- 帮助学员理解并熟练运用 "${safeWord}"（释义：${safeTranslation}）
+- 根据学员水平与偏好调整语速、解释深度与场景
+
+学员画像：
+- 昵称：${nickname}
+- 英语水平：
+${indentMultiline(englishLevelBlock)}
+- 学习场景优先级：
+${indentMultiline(preferenceBlock)}
+
+对话规则：
+1. ${toneHint}
+2. ${sceneHint}
+3. 回复中中英文结合：核心句用英文表达，必要时追加 1 句中文提示。
+4. 每次回复控制在 2-4 句，语气自然友好，可设置角色或场景代入感。
+5. 适时追问或布置小练习，引导学员继续对话。`;
+};
+
+const buildMemoryStoryPrompt = (word, translation, profile) => {
+    const englishLevelValue = normalizeEnglishLevelValue(profile?.englishLevel);
+    const englishLevelLabel = englishLevelValue ? getEnglishLevelByValue(englishLevelValue)?.label ?? englishLevelValue : '未知水平';
+    const preferenceValues = normalizeLearningContexts(profile?.contentPreferences);
+    const sceneFocus = buildSceneCues(preferenceValues) || '日常生活：贴近日常交流的场景';
+    const toneHint = preferenceValues.length > 0 ? `画面应融入 ${describeLearningContexts(preferenceValues)} 相关的生活或职场细节。` : '画面选择贴近日常生活，易于共情。';
+
+    return `你是中文谐音记忆大师兼视频创意导演，需要为英文单词 "${word}"（中文释义：${translation}）生成短视频脚本式提示词，用于驱动文生视频模型。
+
+受众信息：
+- 英语水平：${englishLevelLabel}
+- 偏好场景：${sceneFocus}
+
+创作要求：
+1. 使用贴近中文的谐音桥接，让 "${word}" 的读音自然融入剧情对白或旁白。
+2. ${toneHint}
+3. 故事控制在 2-3 个镜头之内，总时长约 10 秒，节奏紧凑、正向积极。
+4. 每个镜头描述需包含“场景环境”“角色动作”“镜头语言/运镜”“情绪氛围”四个要素。
+5. 在结尾镜头加入一句醒目的中文旁白或字幕，总结单词释义并再次点出谐音钩子。
+
+输出格式（仅限中文文本，不要添加额外解释）：
+- 以 “镜头1：...”“镜头2：...” 的方式顺序描述，每行一个镜头。
+- 最后一行使用 “旁白：...” 给出压轴金句，需自然提及 "${word}" 与其谐音联想。
+`;
+};
+
+const sanitizeChatMessage = message => {
+    if (!message || typeof message !== 'object') return null;
+    const role = message.role === 'assistant' ? 'assistant' : message.role === 'user' ? 'user' : null;
+    if (!role) return null;
+    const rawContent = message.content;
+    const content =
+        typeof rawContent === 'string'
+            ? rawContent.trim()
+            : normalizeMessageContent(rawContent);
+    if (!content) return null;
+    return { role, content };
+};
+
+const pickRecentMessages = conversation => {
+    if (!Array.isArray(conversation)) return [];
+    const sanitized = conversation.map(sanitizeChatMessage).filter(Boolean);
+    return sanitized.slice(-12);
 };
 
 const LexContext = createContext(null);
@@ -283,6 +486,7 @@ export const LexProvider = ({ children }) => {
 
     const cacheRef = useRef(cache);
     const profileRef = useRef(profile);
+    const pendingRequestsRef = useRef(Object.create(null));
 
     useEffect(() => {
         cacheRef.current = cache;
@@ -338,58 +542,195 @@ export const LexProvider = ({ children }) => {
                 return cachedEntry.detail;
             }
 
-            const response = await fetch(DOUBAO_CONFIG.apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${DOUBAO_CONFIG.apiKey}`,
-                },
-                body: JSON.stringify({
-                    model: DOUBAO_CONFIG.endpointId,
-                    messages: [
-                        {
-                            role: 'system',
-                            content: '你是一个专业的英汉词典专家。始终仅返回 JSON 对象，不要包含额外文本。',
-                        },
-                        {
-                            role: 'user',
-                            content: buildDoubaoPrompt(normalized, profileRef.current),
-                        },
-                    ],
-                }),
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                const message = data?.error?.message || data?.message || (typeof data === 'string' ? data : '') || '查询失败，请稍后再试';
-                throw new Error(message);
+            if (pendingRequestsRef.current[normalized]) {
+                return pendingRequestsRef.current[normalized];
             }
 
-            const choice = data?.choices?.[0];
-            if (!choice || !choice.message) {
-                throw new Error('未从模型获取到结果');
+            const requestPromise = (async () => {
+                const response = await fetch(DOUBAO_CONFIG.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${DOUBAO_CONFIG.apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: DOUBAO_CONFIG.endpointId,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: '你是一个专业的英汉词典专家。始终仅返回 JSON 对象，不要包含额外文本。',
+                            },
+                            {
+                                role: 'user',
+                                content: buildDoubaoPrompt(normalized, profileRef.current),
+                            },
+                        ],
+                    }),
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const message = data?.error?.message || data?.message || (typeof data === 'string' ? data : '') || '查询失败，请稍后再试';
+                    throw new Error(message);
+                }
+
+                const choice = data?.choices?.[0];
+                if (!choice || !choice.message) {
+                    throw new Error('未从模型获取到结果');
+                }
+
+                const contentText = normalizeMessageContent(choice.message.content);
+                const payload = extractJsonPayload(contentText);
+                if (!payload) {
+                    throw new Error('模型返回内容无法解析，请稍后再试');
+                }
+
+                const detail = normalizeDoubaoDetail(payload, normalized);
+
+                setCache(prev => ({
+                    ...prev,
+                    [normalized]: {
+                        detail,
+                        fetchedAt: Date.now(),
+                    },
+                }));
+                updateHotWords(detail);
+                return detail;
+            })();
+
+            pendingRequestsRef.current[normalized] = requestPromise;
+
+            try {
+                const detail = await requestPromise;
+                return detail;
+            } finally {
+                delete pendingRequestsRef.current[normalized];
             }
-
-            const contentText = normalizeMessageContent(choice.message.content);
-            const payload = extractJsonPayload(contentText);
-            if (!payload) {
-                throw new Error('模型返回内容无法解析，请稍后再试');
-            }
-
-            const detail = normalizeDoubaoDetail(payload, normalized);
-
-            setCache(prev => ({
-                ...prev,
-                [normalized]: {
-                    detail,
-                    fetchedAt: Date.now(),
-                },
-            }));
-            updateHotWords(detail);
-            return detail;
         },
         [updateHotWords]
     );
+
+    const generateMemoryStoryVideo = useCallback(async (word, translation, options = {}) => {
+        // 首先生成谐音记忆故事提示词
+        const storyPrompt = buildMemoryStoryPrompt(word, translation, profileRef.current);
+
+        // 调用豆包API生成故事
+        const storyResponse = await fetch(DOUBAO_CONFIG.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${DOUBAO_CONFIG.apiKey}`,
+            },
+            body: JSON.stringify({
+                model: DOUBAO_CONFIG.endpointId,
+                messages: [
+                    {
+                        role: 'system',
+                        content: '你是一个创意记忆专家，专门为英语单词创建中文谐音记忆故事。',
+                    },
+                    {
+                        role: 'user',
+                        content: storyPrompt,
+                    },
+                ],
+            }),
+        });
+
+        if (!storyResponse.ok) {
+            const errorData = await storyResponse.json();
+            const message = errorData?.error?.message || errorData?.message || '生成故事失败，请稍后再试';
+            throw new Error(message);
+        }
+
+        const storyData = await storyResponse.json();
+        const storyChoice = storyData?.choices?.[0];
+        if (!storyChoice || !storyChoice.message) {
+            throw new Error('未获取到故事内容');
+        }
+
+        const videoPrompt = normalizeMessageContent(storyChoice.message.content);
+
+        // 调用可灵文生视频API
+        const videoPayload = {
+            templateUuid: KLING_CONFIG.templateUuid,
+            generateParams: {
+                model: options.model || 'kling-v2-1-master',
+                prompt: videoPrompt,
+                aspectRatio: options.aspectRatio || '16:9',
+                duration: options.duration || '5',
+                promptMagic: options.promptMagic !== undefined ? options.promptMagic : 1,
+            },
+        };
+
+        const videoResponse = await fetch(KLING_CONFIG.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(videoPayload),
+        });
+
+        if (!videoResponse.ok) {
+            const errorData = await videoResponse.json();
+            const message = errorData?.error?.message || errorData?.message || '生成视频失败，请稍后再试';
+            throw new Error(message);
+        }
+
+        const videoData = await videoResponse.json();
+        return videoData;
+    }, []);
+
+    const sendWordChatMessage = useCallback(async ({ word, translation, conversation }) => {
+        const normalizedWord = typeof word === 'string' ? word.trim() : '';
+        if (!normalizedWord) {
+            throw new Error('缺少对话目标单词');
+        }
+
+        const history = pickRecentMessages(conversation);
+        if (history.length === 0 || history[history.length - 1]?.role !== 'user') {
+            throw new Error('请先输入你的问题');
+        }
+
+        const response = await fetch(DOUBAO_CONFIG.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${DOUBAO_CONFIG.apiKey}`,
+            },
+            body: JSON.stringify({
+                model: DOUBAO_CONFIG.endpointId,
+                messages: [
+                    {
+                        role: 'system',
+                        content: buildChatSystemPrompt(normalizedWord, translation, profileRef.current),
+                    },
+                    ...history,
+                ],
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const message = data?.error?.message || data?.message || '对话失败，请稍后再试';
+            throw new Error(message);
+        }
+
+        const choice = data?.choices?.[0];
+        if (!choice?.message) {
+            throw new Error('未从模型收到回复');
+        }
+
+        const assistantMessage = normalizeMessageContent(choice.message.content);
+        if (!assistantMessage) {
+            throw new Error('模型回复内容为空，请稍后再试');
+        }
+
+        return {
+            role: 'assistant',
+            content: assistantMessage,
+        };
+    }, []);
 
     const value = useMemo(
         () => ({
@@ -398,8 +739,10 @@ export const LexProvider = ({ children }) => {
             userProfile: profile,
             isProfileComplete,
             saveUserProfile,
+            generateMemoryStoryVideo,
+            sendWordChatMessage,
         }),
-        [hotWords, fetchWordDetail, profile, isProfileComplete, saveUserProfile]
+        [hotWords, fetchWordDetail, profile, isProfileComplete, saveUserProfile, generateMemoryStoryVideo, sendWordChatMessage]
     );
 
     return <LexContext.Provider value={value}>{children}</LexContext.Provider>;

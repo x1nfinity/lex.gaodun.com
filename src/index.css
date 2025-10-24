@@ -40,3 +40,62 @@ body {
 button {
     font-family: inherit;
 }
+
+/* 视频生成结果样式 */
+.video-result {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.video-result.loading {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.video-result.error {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.video-result.success {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.video-result h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.video-result p {
+    margin: 0.25rem 0;
+}
+
+.video-note {
+    font-style: italic;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+}
+
+.retry-button {
+    margin-top: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+    background-color: #b91c1c;
+}

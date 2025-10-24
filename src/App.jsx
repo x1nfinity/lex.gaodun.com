@@ -5,6 +5,7 @@ import AppLayout from './components/AppLayout.jsx';
 import HomePage from './pages/HomePage.jsx';
 import OnboardingPage from './pages/OnboardingPage.jsx';
 import WordDetailPage from './pages/WordDetailPage.jsx';
+import ChatPage from './pages/ChatPage.jsx';
 
 const AppRoutes = () => {
     const { isProfileComplete } = useLexContext();
@@ -19,6 +20,7 @@ const AppRoutes = () => {
                 <Route path='/' element={<AppLayout />}>
                     <Route index element={<HomePage />} />
                     <Route path='word/:word' element={<WordDetailPage />} />
+                    <Route path='chat/:word' element={<ChatPage />} />
                 </Route>
             </Routes>
         </BrowserRouter>
