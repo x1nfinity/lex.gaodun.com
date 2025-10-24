@@ -1,0 +1,99 @@
+.profile-editor {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: profile-fade-in 0.18s ease;
+}
+
+.profile-editor-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.profile-editor-panel {
+    position: relative;
+    width: min(720px, 100%);
+    max-height: min(90vh, 720px);
+    overflow-y: auto;
+    border-radius: 32px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 255, 0.92));
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    box-shadow: 0 45px 120px rgba(15, 23, 42, 0.32);
+    padding: 48px 32px 40px;
+    backdrop-filter: blur(18px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.profile-editor-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: #fff;
+    font-size: 22px;
+    font-weight: 500;
+    color: #1f2937;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.profile-editor-close:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.profile-editor .onboarding-card {
+    width: 100%;
+    max-width: 560px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: none;
+    padding: 28px 32px 32px;
+    border: 1px solid rgba(79, 70, 229, 0.08);
+}
+
+.profile-editor .onboarding-actions {
+    justify-content: flex-end;
+}
+
+@keyframes profile-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-editor {
+        padding: 16px;
+    }
+
+    .profile-editor-panel {
+        padding: 32px 12px 28px;
+        border-radius: 24px;
+    }
+
+    .profile-editor-close {
+        top: 12px;
+        right: 12px;
+    }
+}
