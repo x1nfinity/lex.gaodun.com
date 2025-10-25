@@ -108,7 +108,7 @@ const ProfileEditor = ({ open, onClose }) => {
                                 <h3 className='text-xl font-semibold text-slate-900'>{englishLevelLabel}</h3>
                                 <p className='text-sm leading-relaxed text-slate-600'>{englishLevelDescription}</p>
                             </div>
-                            <span className='rounded-full bg-white px-3 py-1 text-xs font-medium text-indigo-500 shadow-sm ring-1 ring-indigo-100/80'>
+                            <span className='whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-medium text-indigo-500 shadow-sm ring-1 ring-indigo-100/80'>
                                 CEFR {englishLevelOption?.value ?? '—'}
                             </span>
                         </div>
@@ -131,7 +131,7 @@ const ProfileEditor = ({ open, onClose }) => {
                                 <h3 className='mt-2 text-xl font-semibold text-slate-900'>优先学习场景</h3>
                                 <p className='mt-2 text-sm text-slate-500'>我们会在释义、例句与互动中优先融入这些场景。</p>
                             </div>
-                            <span className='rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-500 ring-1 ring-indigo-100/80'>
+                            <span className='whitespace-nowrap rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-500 ring-1 ring-indigo-100/80'>
                                 {preferenceDetails.length} 项
                             </span>
                         </div>

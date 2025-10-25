@@ -439,7 +439,7 @@ const LexContext = createContext(null);
 
 export const LexProvider = ({ children }) => {
     const [hotWords, setHotWords] = useState(() => {
-        return safeReadFromStorage(STORAGE_KEYS.hotWords, DEFAULT_HOT_WORDS);
+        return DEFAULT_HOT_WORDS; // 这里不走缓存
     });
     const [cache, setCache] = useState(() => safeReadFromStorage(STORAGE_KEYS.cache, {}));
     const [profile, setProfile] = useState(() => normalizeProfile(safeReadFromStorage(STORAGE_KEYS.profile, DEFAULT_PROFILE)));
