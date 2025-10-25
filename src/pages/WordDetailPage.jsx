@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon, SoundIcon, SparkleIcon } from '../components/icons.jsx';
+import { ArrowLeftIcon, SoundIcon } from '../components/icons.jsx';
 import { useLexContext } from '../context/LexContext.jsx';
 import { useText2Video } from '../text2video/lib.ts';
 import ChatPage from './ChatPage.jsx';
 
 const LOADING_HINTS = [
-    { label: '正在连接权威词库与发音资源...', delay: 0 },
+    { label: '正在连接权威词库...', delay: 0 },
     { label: 'AI 正在生成符合你水平的释义与例句...', delay: 1600 },
     { label: '正在挑选贴合你偏好的用法与搭配...', delay: 3200 },
 ];
@@ -314,7 +314,7 @@ const WordDetailPage = () => {
                                 <h3>谐音记忆法</h3>
                             </div>
                         </div>
-                        {(!presetVideoUrl || !videoResult.videoUrl) && (
+                        {(!presetVideoUrl && !videoResult?.videoUrl) && (
                             <>
                                 <p className='ai-card-description'>生成 10 秒创意故事，把发音、释义与画面一次记住。</p>
                                 <ul className='ai-card-list'>
@@ -334,7 +334,7 @@ const WordDetailPage = () => {
                         {/* 视频播放器 */}
                         {(presetVideoUrl || videoResult?.videoUrl) && (
                             <div className='video-player' style={{ marginTop: '16px' }}>
-                                <video controls style={{ width: '100%', borderRadius: '8px' }} src={presetVideoUrl || videoResult.videoUrl}>
+                                <video controls style={{ width: '100%', borderRadius: '8px' }} src={presetVideoUrl || videoResult?.videoUrl}>
                                     您的浏览器不支持视频播放。
                                 </video>
                             </div>
